@@ -44,7 +44,6 @@ class WebAssets(plugin.Plugin):
         'reload': 'boolean(default=False)',
         'refresh': 'boolean(default=False)',
 
-        'url': 'string(default="/static/$app_name")',
         'debug': 'boolean(default=False)',
         'cache': 'boolean(default=True)',
         'url_expire': 'boolean(default=None)',
@@ -105,11 +104,13 @@ class WebAssets(plugin.Plugin):
 
         return self.reload
 
-    def handle_start(self, app):
-        if self.bundles and (self.reloader is not None):
+    def handle_start(self, app, services_service, reloader_service=None):
+        self.environment.config.setdefault('url', app.static_url)
+
+        if self.bundles and (reloader_service is not None):
             for name, bundle in self.bundles.items():
                 for filename in set(get_all_bundle_files(bundle)):
-                    self.reloader.watch_file(
+                    reloader_service.watch_file(
                         filename,
                         on_change, o=self, method='build_on_change', bundle=name
                     )
