@@ -30,7 +30,7 @@ class Env(Environment):
         return self.__class__(**config)
 
 
-def on_change(reloader, path, o, method, bundle):
+def on_change(event, path, o, method, bundle):
     return getattr(o, method)(path, bundle)
 
 
