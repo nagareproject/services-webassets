@@ -32,7 +32,7 @@ setup(
     zip_safe=False,
     setup_requires=['setuptools_scm'],
     use_scm_version=True,
-    install_requires=['glob2', 'dukpy', 'webassets', 'nagare-server-mvc'],
+    install_requires=['glob2', 'dukpy', 'webassets', 'nagare-server'],
     entry_points='''
         [nagare.commands]
         webassets = nagare.admin.webassets:Commands
