@@ -47,7 +47,7 @@ class WebAssets(plugin.Plugin):
         'debug': 'boolean(default=False)',
         'cache': 'boolean(default=True)',
         'url_expire': 'boolean(default=None)',
-        'manifest': 'string(default=$static/manifest.json")',
+        'manifest': 'string(default=$static/manifest.json)',
         'manifest_cache': 'boolean(default=True)',
         'versions': 'string(default="hash")',
         'updater': 'string(default="timestamp")',
