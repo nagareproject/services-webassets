@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2019 Net-ng.
+# Copyright (c) 2008-2020 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -68,7 +68,13 @@ class WebAssets(plugin.Plugin):
     ):
         """Initialization
         """
-        services_service(super(WebAssets, self).__init__, name, dist)
+        services_service(
+            super(WebAssets, self).__init__, name, dist,
+            bundles=bundles, output_dir=output_dir,
+            watch=watch, reload=reload, refresh=refresh, manifest=manifest,
+            mapping=mapping,
+            **config
+        )
 
         manifest = 'json:{}'.format(manifest) if manifest else None
         self.environment = Env(
