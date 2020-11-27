@@ -14,7 +14,7 @@ from nagare.server import reference
 from nagare.admin.webassets import Command
 from webassets import Environment, filter, Bundle
 from webassets.bundle import get_all_bundle_files
-from dukpy.webassets import TypeScript, BabelJSX, BabelJS
+from dukpy.webassets import TypeScript, BabelJSX, BabelJS, CompileLess
 
 
 class Storage(Environment.config_storage_class):
@@ -91,6 +91,7 @@ class WebAssets(plugin.Plugin):
         filter.register_filter(TypeScript)
         filter.register_filter(BabelJSX)
         filter.register_filter(BabelJS)
+        filter.register_filter(CompileLess)
 
         if bundles:
             bundles = reference.load_object(bundles)[0]
