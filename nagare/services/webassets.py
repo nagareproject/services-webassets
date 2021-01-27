@@ -37,25 +37,26 @@ def on_change(event, path, o, method, bundle):
 class WebAssets(plugin.Plugin):
     """Web assets manager
     """
-    CONFIG_SPEC = {
-        'bundles': 'string(default=None)',
-        'output_dir': 'string(default=$static)',
-        'watch': 'boolean(default=False)',
-        'reload': 'boolean(default=False)',
-        'refresh': 'boolean(default=False)',
+    CONFIG_SPEC = dict(
+        plugin.Plugin.CONFIG_SPEC,
+        bundles='string(default=None)',
+        output_dir='string(default=$static)',
+        watch='boolean(default=False)',
+        reload='boolean(default=False)',
+        refresh='boolean(default=False)',
 
-        'debug': 'boolean(default=False)',
-        'cache': 'boolean(default=True)',
-        'url_expire': 'boolean(default=None)',
-        'manifest': 'string(default=$static/manifest.json)',
-        'manifest_cache': 'boolean(default=True)',
-        'versions': 'string(default="hash")',
-        'updater': 'string(default="timestamp")',
-        'load_path': 'force_list(default=list($root))',
-        'cache_file_mode': 'string(default=None)',
+        debug='boolean(default=False)',
+        cache='boolean(default=True)',
+        url_expire='boolean(default=None)',
+        manifest='string(default=$static/manifest.json)',
+        manifest_cache='boolean(default=True)',
+        versions='string(default="hash")',
+        updater='string(default="timestamp")',
+        load_path='force_list(default=list($root))',
+        cache_file_mode='string(default=None)',
 
-        'mapping': {'__many__': 'string'}
-    }
+        mapping={'__many__': 'string'}
+    )
 
     def __init__(
             self,
