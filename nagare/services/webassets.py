@@ -52,7 +52,7 @@ class WebAssets(plugin.Plugin):
         manifest_cache='boolean(default=True)',
         versions='string(default="hash")',
         updater='string(default="timestamp")',
-        load_path='force_list(default=list("$root"))',
+        load_path='string_list(default=list("$root"))',
         cache_file_mode='string(default=None)',
 
         mapping={'___many___': 'string'}
