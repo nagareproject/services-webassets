@@ -105,6 +105,10 @@ class WebAssets(plugin.Plugin):
 
         self.bundles = bundles
 
+    @property
+    def config(self):
+        return self.environment.config
+
     def build_on_change(self, path, bundle):
         status = Command('build').run(self, bundles=[bundle])
         if status == 0:

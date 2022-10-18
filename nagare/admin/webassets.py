@@ -53,3 +53,13 @@ class Clean(Command):
 
 class Check(Command):
     DESC = 'check if assets need to be rebuilt'
+
+
+class List(command.Command):
+    DESC = 'list assets'
+
+    def run(self, webassets_service):
+        for bundle in webassets_service.bundles:
+            print(bundle)
+
+        return 0
