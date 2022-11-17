@@ -9,12 +9,22 @@
 
 from __future__ import absolute_import
 
+import gzip
+
 from nagare.services import plugin
 from nagare.server import reference
 from nagare.admin.webassets import Command
 from webassets import Environment, filter, Bundle
 from webassets.bundle import get_all_bundle_files
 from dukpy.webassets import TypeScript, BabelJSX, BabelJS, CompileLess
+
+
+class GZipFilter(filter.Filter):
+    name = 'gzip'
+    binary_output = True
+
+    def output(self, _in, out, **kw):
+        gzip.GzipFile(fileobj=out, mode='wb').write(_in.read().encode('utf-8'))
 
 
 class Storage(Environment.config_storage_class):
@@ -93,6 +103,7 @@ class WebAssets(plugin.Plugin):
         filter.register_filter(BabelJSX)
         filter.register_filter(BabelJS)
         filter.register_filter(CompileLess)
+        filter.register_filter(GZipFilter)
 
         if bundles:
             bundles = reference.load_object(bundles)[0]
@@ -112,7 +123,7 @@ class WebAssets(plugin.Plugin):
     def build_on_change(self, path, bundle):
         status = Command('build').run(self, bundles=[bundle])
         if status == 0:
-            print('Build done')
+            self.logger.info('Build done: ' + bundle)
 
         return self.reload
 
