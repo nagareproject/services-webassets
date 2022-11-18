@@ -10,6 +10,7 @@
 from __future__ import absolute_import
 
 import gzip
+from collections import defaultdict
 
 from nagare.services import plugin
 from nagare.server import reference
@@ -40,8 +41,8 @@ class Env(Environment):
         return self.__class__(**config)
 
 
-def on_change(event, path, o, method, bundle):
-    return (event.event_type in ('created', 'modified')) and getattr(o, method)(path, bundle)
+def on_change(event, path, o, method, bundles):
+    return (event.event_type in ('created', 'modified')) and getattr(o, method)(path, bundles)
 
 
 class WebAssets(plugin.Plugin):
@@ -120,10 +121,10 @@ class WebAssets(plugin.Plugin):
     def config(self):
         return self.environment.config
 
-    def build_on_change(self, path, bundle):
-        status = Command('build').run(self, bundles=[bundle])
+    def build_on_change(self, path, bundles):
+        status = Command('build').run(self, bundles=bundles)
         if status == 0:
-            self.logger.info('Build done: ' + bundle)
+            self.logger.info('Build done: ' + ', '.join(bundles))
 
         return self.reload
 
@@ -131,12 +132,18 @@ class WebAssets(plugin.Plugin):
         self.environment.config.setdefault('url', app.static_url)
 
         if self.bundles and (reloader_service is not None):
-            for name, bundle in self.bundles.items():
+            filenames = defaultdict(tuple)
+            for bundle_name, bundle in self.bundles.items():
                 for filename in set(get_all_bundle_files(bundle)):
-                    reloader_service.watch_file(
-                        filename,
-                        on_change, o=self, method='build_on_change', bundle=name
-                    )
+                    filenames[filename] += (bundle_name,)
+
+            bundles = {bundles: bundles for bundles in filenames.values()}
+
+            for filename, bundle_names in filenames.items():
+                reloader_service.watch_file(
+                    filename,
+                    on_change, o=self, method='build_on_change', bundles=bundles[bundle_names]
+                )
 
     def urls(self):
         environment = self.environment.copy(cache=False, auto_build=self.refresh)
