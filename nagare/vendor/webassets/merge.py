@@ -58,7 +58,7 @@ class BaseHunk(object):
 
     def save(self, filename):
         data = self.data()
-        if isinstance(date, type(u'')):
+        if isinstance(data, type(u'')):
             data = data.encode('utf-8')
 
         with open(filename, 'wb') as f:
@@ -79,7 +79,7 @@ class FileHunk(BaseHunk):
         pass
 
     def data(self):
-        f = open(self.filename, 'r', encoding='utf-8')
+        f = open(self.filename, 'rb')
         try:
             return f.read()
         finally:
@@ -125,8 +125,8 @@ class UrlHunk(BaseHunk):
             else:
                 with contextlib.closing(response):
                     data = response.read()
-                if isinstance(data, six.binary_type):
-                    data = data.decode('utf-8')
+                #if isinstance(data, six.binary_type):
+                #    data = data.decode('utf-8')
                 self._data = data
 
                 # Cache the info from this request
@@ -182,9 +182,18 @@ def merge(hunks, separator=None):
     # TODO: combine the list of source files, we'd like to collect them
     # The linebreak is important in certain cases for Javascript
     # files, like when a last line is a //-comment.
-    if not separator:
+    datas = [h.data() for h in hunks]
+
+    is_unicodes = [isinstance(d, type(u'')) for d in datas]
+    if all(is_unicodes):
         separator = '\n'
-    return MemoryHunk(separator.join([h.data() for h in hunks]))
+    elif not any(is_unicodes):
+        separator = b''
+    else:
+        datas = [d.decode('utf-8') if isinstance(d, type(b'')) else d for d in datas]
+        separator = '\n'
+
+    return MemoryHunk(separator.join(datas))
 
 
 class MoreThanOneFilterError(Exception):
@@ -208,7 +217,7 @@ class FilterTool(object):
     """
 
     VALID_TRANSFORMS = ('input', 'output',)
-    VALID_FUNCS =  ('open', 'concat',)
+    VALID_FUNCS = ('open', 'concat',)
 
     def __init__(self, cache=None, no_cache_read=False, kwargs=None):
         self.cache = cache
@@ -250,7 +259,7 @@ class FilterTool(object):
     def create_output_buffer_for(self, filter):
         return BytesIO(b'') if getattr(filter, 'binary_output', False) else StringIO(u'')
 
-    def apply(self, hunk, filters, type, kwargs=None):
+    def apply(self, hunk, filters, type_, kwargs=None):
         """Apply the given list of filters to the hunk, returning a new
         ``MemoryHunk`` object.
 
@@ -258,14 +267,14 @@ class FilterTool(object):
         If ``hunk`` is a file hunk, a ``source_path`` key will automatically
         be added to ``kwargs``.
         """
-        assert type in self.VALID_TRANSFORMS
+        assert type_ in self.VALID_TRANSFORMS
         log.debug('Need to run method "%s" of filters (%s) on hunk %s with '
-                  'kwargs=%s', type, filters, hunk, kwargs)
+                  'kwargs=%s', type_, filters, hunk, kwargs)
 
-        filters = [f for f in filters if getattr(f, type, None)]
+        filters = [f for f in filters if getattr(f, type_, None)]
         if not filters:  # Short-circuit
             log.debug('No filters have "%s" methods, returning hunk '
-                      'unchanged' % (type,))
+                      'unchanged' % (type_,))
             return hunk
 
         kwargs_final = self.kwargs.copy()
@@ -274,11 +283,11 @@ class FilterTool(object):
         def func():
             data = self.create_input_buffer_for(hunk.data())
             for filter in filters:
-                data = self.convert_input_buffer_for(filter, hunk.data())
+                data = self.convert_input_buffer_for(filter, data.read())
                 out = self.create_output_buffer_for(filter)
                 log.debug('Running method "%s" of  %s with kwargs=%s',
-                    type, filter, kwargs_final)
-                getattr(filter, type)(data, out, **kwargs_final)
+                    type_, filter, kwargs_final)
+                getattr(filter, type_)(data, out, **kwargs_final)
                 data = out
                 data.seek(0)
 
@@ -302,7 +311,7 @@ class FilterTool(object):
         # key, such a change would invalidate the caches for all subsequent
         # operations on this hunk as well, even though it didn't actually
         # change after all.
-        key = ("hunk", hunk, tuple(filters), type, additional_cache_keys)
+        key = ("hunk", hunk, tuple(filters), type_, additional_cache_keys)
         return self._wrap_cache(key, func)
 
     def apply_func(self, filters, type, args, kwargs=None, cache_key=None):

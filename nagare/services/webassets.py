@@ -29,6 +29,7 @@ class GZipFilter(filter.Filter):
 
 
 class Storage(Environment.config_storage_class):
+
     def items(self):
         return self._dict.items()
 
@@ -113,7 +114,7 @@ class WebAssets(plugin.Plugin):
 
             for name, bundle in bundles.items():
                 self.environment.register(name, bundle)
-                bundle.get_version()
+                # bundle.get_version()
 
         self.bundles = bundles
 

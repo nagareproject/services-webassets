@@ -13,7 +13,6 @@ from webassets.version import get_manifest
 from webassets.cache import FilesystemCache
 from webassets.utils import set, StringIO
 
-
 __all__ = ('CommandError', 'CommandLineEnvironment', 'main')
 
 
@@ -80,7 +79,6 @@ class BuildCommand(Command):
             If set to ``True``, then :attr:`Environment.debug`` will forcibly
             be disabled (set to ``False``) during the build.
         """
-
         # Validate arguments
         if bundles and output:
             raise CommandError(
@@ -161,8 +159,9 @@ class BuildCommand(Command):
             if name:
                 # A name is not necessary available of the bundle was
                 # registered without one.
-                self.log.info("Building bundle: %s (to %s)" % (
-                    name, overwrite_filename or bundle.output))
+                output_name = overwrite_filename or bundle.output
+                self.log.info("Building bundle: %s%s" % (
+                    name, (' (to %s)' % output_name) if output_name else ''))
             else:
                 self.log.info("Building bundle: %s" % bundle.output)
 

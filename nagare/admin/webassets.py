@@ -51,6 +51,11 @@ class Build(Command):
             help='optional bundle names to process. If none are specified, then all known bundles will be built'
         )
 
+    def run(self, webassets_service, services_service, no_cache=False, bundles=()):
+        bundles = bundles or list(webassets_service.bundles)
+
+        return services_service(super(Build, self).run, no_cache=no_cache, bundles=bundles)
+
 
 class Clean(Command):
     DESC = 'delete generated assets'
