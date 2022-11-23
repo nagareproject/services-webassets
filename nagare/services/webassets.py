@@ -59,11 +59,11 @@ class WebAssets(plugin.Plugin):
 
         debug='boolean(default=False)',
         cache='boolean(default=True)',
+        url='string(default="/static$app_url")',
         url_expire='boolean(default=None)',
         manifest='string(default="$static/manifest.json")',
         manifest_cache='boolean(default=True)',
         versions='string(default="hash")',
-        updater='string(default="timestamp")',
         load_path='string_list(default=list("$root"))',
         cache_file_mode='string(default=None)',
 
@@ -89,11 +89,10 @@ class WebAssets(plugin.Plugin):
             **config
         )
 
-        manifest = 'json:{}'.format(manifest) if manifest else None
         self.environment = Env(
             directory=output_dir,
             auto_build=False,
-            manifest=manifest,
+            manifest='json:{}'.format(manifest) if manifest else False,
             url_mapping=mapping or {},
             **config
         )

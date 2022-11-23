@@ -246,13 +246,13 @@ class FilterTool(object):
 
     def convert_input_buffer_for(self, filter, data):
         accepts_binary = getattr(filter, 'binary_input', False)
-        have_binary = isinstance(data, BytesIO)
+        is_binary = not isinstance(data, type(u''))
 
-        if accepts_binary and not have_binary:
+        if accepts_binary and not is_binary:
             data = data.getvalue().encode('utf-8')
 
-        if not accepts_binary and have_binary:
-            data = data.getvalue().decode('utf-8')
+        if not accepts_binary and is_binary:
+            data = data.decode('utf-8')
 
         return (StringIO if isinstance(data, type(u'')) else BytesIO)(data)
 
