@@ -118,7 +118,7 @@ class WebAssets(plugin.Plugin):
             for name, bundle in bundles.items():
                 self.environment.register(name, bundle)
 
-        self.bundles = bundles
+        self.bundles = bundles or {}
 
     @property
     def config(self):
@@ -148,6 +148,4 @@ class WebAssets(plugin.Plugin):
                 )
 
     def urls(self, *bundles_names):
-        selected_bundles = [self.bundles[bundle_name] for bundle_name in (bundles_names or self.bundles)]
-
-        return sum([bundle.urls() for bundle in selected_bundles], [])
+        return {bundle_name: self.bundles[bundle_name].urls() for bundle_name in bundles_names or self.bundles}
