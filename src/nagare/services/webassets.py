@@ -25,7 +25,11 @@ class GZipFilter(filter.Filter):
     binary_output = True
 
     def output(self, _in, out, **kw):
-        gzip.GzipFile(fileobj=out, mode='wb').write(_in.read().encode('utf-8'))
+        try:
+            output_file = gzip.GzipFile(fileobj=out, mode='wb')
+            output_file.write(_in.read().encode('utf-8'))
+        finally:
+            output_file.close()
 
 
 class Storage(Environment.config_storage_class):
