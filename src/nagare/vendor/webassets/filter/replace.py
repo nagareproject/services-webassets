@@ -3,7 +3,7 @@ from webassets.filter import Filter, register_filter
 
 
 class ReplaceFilter(Filter):
-    """
+    r"""
     A filter that allows arbitrary search/replace of strings using a source
     regex and a replacement string. Unlike cssrewrite this works on strings
     which are not paths and can be used as an output filter.
