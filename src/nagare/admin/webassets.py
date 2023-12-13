@@ -9,14 +9,14 @@
 
 from __future__ import absolute_import
 
-from os import path
 import sys
+from os import path
 
 sys.path.insert(0, path.join(path.dirname(__file__), '..', 'vendor'))
 
 
-from nagare.admin import command  # noqa: E402
 from webassets import script  # noqa: E402
+from nagare.admin import command  # noqa: E402
 
 
 class Commands(command.Commands):
