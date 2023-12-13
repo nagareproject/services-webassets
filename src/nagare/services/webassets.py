@@ -9,15 +9,15 @@
 
 from __future__ import absolute_import
 
-from collections import defaultdict
 import gzip
+from collections import defaultdict
 
-from dukpy.webassets import BabelJS, BabelJSX, CompileLess, TypeScript
-from nagare.admin.webassets import Command
-from nagare.server import reference
-from nagare.services import plugin
 from webassets import Bundle, Environment, filter  # noqa: F401
+from nagare.server import reference
+from dukpy.webassets import BabelJS, BabelJSX, TypeScript, CompileLess
+from nagare.services import plugin
 from webassets.bundle import get_all_bundle_files
+from nagare.admin.webassets import Command
 
 
 class GZipFilter(filter.Filter):
@@ -80,7 +80,6 @@ class WebAssets(plugin.Plugin):
         reload=False,
         manifest='',
         mapping=None,
-        reloader_service=None,
         services_service=None,
         **config,
     ):
@@ -106,7 +105,7 @@ class WebAssets(plugin.Plugin):
             **config,
         )
         self.reload = reload
-        self.reloader = reloader_service if watch else None
+        self.watch = watch
 
         filter.register_filter(TypeScript)
         filter.register_filter(BabelJSX)
@@ -138,7 +137,7 @@ class WebAssets(plugin.Plugin):
     def handle_serve(self, app, services_service, reloader_service=None):
         self.environment.config.setdefault('url', app.static_url)
 
-        if self.bundles and (reloader_service is not None):
+        if self.watch and (reloader_service is not None) and self.bundles:
             filenames = defaultdict(tuple)
             for bundle_name, bundle in self.bundles.items():
                 for filename in set(get_all_bundle_files(bundle)):
