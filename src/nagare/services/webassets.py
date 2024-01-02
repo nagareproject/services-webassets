@@ -56,7 +56,7 @@ class WebAssets(plugin.Plugin):
         plugin.Plugin.CONFIG_SPEC,
         bundles='string(default=None)',
         output_dir='string(default="$static")',
-        watch='boolean(default=False)',
+        watch='boolean(default=True)',
         reload='boolean(default=False)',
         debug='boolean(default=False)',
         cache='boolean(default=True)',
@@ -76,7 +76,7 @@ class WebAssets(plugin.Plugin):
         dist,
         bundles=None,
         output_dir=None,
-        watch=False,
+        watch=True,
         reload=False,
         manifest='',
         mapping=None,
@@ -104,7 +104,7 @@ class WebAssets(plugin.Plugin):
             url_mapping=mapping or {},
             **config,
         )
-        self.reload = reload
+        self.reload = False if reload else None
         self.watch = watch
 
         filter.register_filter(TypeScript)
