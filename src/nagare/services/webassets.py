@@ -9,8 +9,14 @@
 
 from __future__ import absolute_import
 
+import os
+import sys
 import gzip
 from collections import defaultdict
+
+vendor_path = os.path.join(os.path.dirname(__file__), '..', 'vendor')
+if vendor_path not in sys.path:
+    sys.path.insert(0, vendor_path)
 
 from webassets import Bundle, Environment, filter  # noqa: F401
 from nagare.server import reference
