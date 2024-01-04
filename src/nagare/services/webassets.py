@@ -52,7 +52,7 @@ class Env(Environment):
 
 
 def on_change(event, path, o, method, bundles):
-    return (event.event_type in ('created', 'modified')) and getattr(o, method)(path, bundles)
+    return getattr(o, method)(path, bundles) if event.event_type in ('created', 'modified') else None
 
 
 class WebAssets(plugin.Plugin):
