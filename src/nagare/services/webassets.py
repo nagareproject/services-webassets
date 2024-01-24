@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2023 Net-ng.
+# Copyright (c) 2008-2024 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -19,10 +19,11 @@ if vendor_path not in sys.path:
     sys.path.insert(0, vendor_path)
 
 from webassets import Bundle, Environment, filter  # noqa: F401
-from nagare.server import reference
 from dukpy.webassets import BabelJS, BabelJSX, TypeScript, CompileLess
-from nagare.services import plugin
 from webassets.bundle import get_all_bundle_files
+
+from nagare.server import reference
+from nagare.services import plugin
 from nagare.admin.webassets import Command
 
 

@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2023 Net-ng.
+# Copyright (c) 2008-2024 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -17,6 +17,7 @@ if vendor_path not in sys.path:
     sys.path.insert(0, vendor_path)
 
 from webassets import script  # noqa: E402
+
 from nagare.admin import command  # noqa: E402
 
 
