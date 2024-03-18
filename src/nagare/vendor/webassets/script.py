@@ -311,11 +311,14 @@ class CheckCommand(Command):
         if not updater:
             self.log.debug('no updater configured, using TimestampUpdater')
             updater = TimestampUpdater()
-        for bundle in self.environment:
-            self.log.info('Checking asset: %s', bundle.output)
+        for name, bundle in self.environment._named_bundles.items():
+            msg = ''
             if updater.needs_rebuild(bundle, self.environment):
-                self.log.info('  needs update')
                 needsupdate = True
+                msg = ' *** needs update ***'
+
+            self.log.info(
+                'Checking asset: %s%s%s', name, (' (%s)' % bundle.output) if bundle.output else '', msg)
         if needsupdate:
             sys.exit(-1)
 

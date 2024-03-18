@@ -123,7 +123,7 @@ class TimestampUpdater(BundleDefUpdater):
         from .bundle import Bundle
         from webassets.version import TimestampVersion
 
-        if not o_modified:
+        if not o_modified and bundle.output:
             try:
                 resolved_output = bundle.resolve_output(ctx)
             except BundleError:

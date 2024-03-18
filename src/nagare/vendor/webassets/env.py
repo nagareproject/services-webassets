@@ -114,7 +114,7 @@ class Resolver(object):
 
         def glob_generator(basedir, expr):
             expr = path.join(basedir, expr)
-            for filename in glob.iglob(expr):
+            for filename in glob.iglob(expr, recursive=True):
                 if path.isdir(filename):
                     continue
                 yield path.normpath(filename)
