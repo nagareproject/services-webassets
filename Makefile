@@ -6,14 +6,14 @@ clean:
 	@find src \( -name '*.py[co]' -o -name '__pycache__' \) -delete
 	@rm -rf doc/_build/*
 
+upgrade-precommit:
+	python -m pre_commit autoupdate
+
 install-dev: clean
 	python -m pip install -e '.[dev']
 	git init
 	python -m pre_commit install
-	python -m pre_commit autoupdate
-
-upgrade-precommit:
-	python -m pre_commit autoupdate
+	$(MAKE) upgrade-precommit
 
 tests:
 	python -m pytest

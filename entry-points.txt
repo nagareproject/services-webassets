@@ -1,3 +1,7 @@
+[console_scripts]
+nagare-webassets = nagare.admin.main:run
+nagare-webassets-build = nagare.admin.main:run
+
 [nagare.commands]
 webassets = nagare.admin.webassets:Commands
 

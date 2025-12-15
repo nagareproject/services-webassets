@@ -1,13 +1,11 @@
 # --
-# Copyright (c) 2008-2024 Net-ng.
+# Copyright (c) 2014-2025 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
 # the file LICENSE.txt, which you should have received as part of
 # this distribution.
 # --
-
-from __future__ import absolute_import
 
 import os
 import sys
@@ -59,23 +57,22 @@ def on_change(event, path, o, method, bundles):
 class WebAssets(plugin.Plugin):
     """Web assets manager."""
 
-    CONFIG_SPEC = dict(
-        plugin.Plugin.CONFIG_SPEC,
-        bundles='string(default=None)',
-        output_dir='string(default="$static")',
-        watch='boolean(default=True)',
-        reload='boolean(default=False)',
-        debug='boolean(default=False)',
-        cache='boolean(default=True)',
-        url='string(default="/static$app_url")',
-        url_expire='boolean(default=None)',
-        manifest='string(default="$static/manifest.json")',
-        manifest_cache='boolean(default=True)',
-        versions='string(default="hash")',
-        load_path='string_list(default=list("$root"))',
-        cache_file_mode='string(default=None)',
-        mapping={'___many___': 'string'},
-    )
+    CONFIG_SPEC = plugin.Plugin.CONFIG_SPEC | {
+        'bundles': 'string(default=None)',
+        'output_dir': 'string(default="$static")',
+        'watch': 'boolean(default=True)',
+        'reload': 'boolean(default=False)',
+        'debug': 'boolean(default=False)',
+        'cache': 'boolean(default=True)',
+        'url': 'string(default="/static$app_url")',
+        'url_expire': 'boolean(default=None)',
+        'manifest': 'string(default="$static/manifest.json")',
+        'manifest_cache': 'boolean(default=True)',
+        'versions': 'string(default="hash")',
+        'load_path': 'string_list(default=list("$root"))',
+        'cache_file_mode': 'string(default=None)',
+        'mapping': {'___many___': 'string'},
+    }
 
     def __init__(
         self,
@@ -92,7 +89,7 @@ class WebAssets(plugin.Plugin):
     ):
         """Initialization."""
         services_service(
-            super(WebAssets, self).__init__,
+            super().__init__,
             name,
             dist,
             bundles=bundles,

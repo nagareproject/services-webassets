@@ -1,13 +1,11 @@
 # --
-# Copyright (c) 2008-2024 Net-ng.
+# Copyright (c) 2014-2025 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
 # the file LICENSE.txt, which you should have received as part of
 # this distribution.
 # --
-
-from __future__ import absolute_import
 
 import os
 import sys
@@ -41,7 +39,7 @@ class Build(Command):
     DESC = 'build assets'
 
     def set_arguments(self, parser):
-        super(Build, self).set_arguments(parser)
+        super().set_arguments(parser)
 
         parser.add_argument('--no-cache', action='store_true', help='do not use a cache that might be configured')
 
@@ -56,7 +54,7 @@ class Build(Command):
     def run(self, webassets_service, services_service, no_cache=False, bundles=()):
         bundles = bundles or list(webassets_service.bundles)
 
-        return services_service(super(Build, self).run, no_cache=no_cache, bundles=bundles)
+        return services_service(super().run, no_cache=no_cache, bundles=bundles)
 
 
 class Clean(Command):
