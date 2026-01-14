@@ -2,8 +2,6 @@
 contents (think minification, compression).
 """
 
-from __future__ import with_statement
-
 import os
 import subprocess
 import inspect
@@ -11,9 +9,6 @@ import shlex
 import tempfile
 import pkgutil
 from webassets import six
-from webassets.six.moves import map
-from webassets.six.moves import zip
-
 try:
     frozenset
 except NameError:
@@ -23,7 +18,8 @@ from webassets.importlib import import_module
 from webassets.utils import hash_func
 
 
-__all__ = ('Filter', 'CallableFilter', 'get_filter', 'register_filter', 'ExternalTool', 'JavaTool')
+__all__ = ('Filter', 'CallableFilter', 'get_filter', 'register_filter',
+           'ExternalTool', 'JavaTool')
 
 
 def freezedicts(obj):
@@ -34,7 +30,7 @@ def freezedicts(obj):
     if isinstance(obj, (list, tuple)):
         return type(obj)([freezedicts(sub) for sub in obj])
     if isinstance(obj, dict):
-        return frozenset(six.iteritems(obj))
+        return frozenset(obj.items())
     return obj
 
 
@@ -42,27 +38,19 @@ def smartsplit(string, sep):
     r"""Split while allowing escaping.
 
     So far, this seems to do what I expect - split at the separator,
-    allow escaping via \, and allow the backslash itself to be escaped.
+    allow escaping via \\, and allow the backslash itself to be escaped.
 
     One problem is that it can raise a ValueError when given a backslash
     without a character to escape. I'd really like a smart splitter
     without manually scan the string. But maybe that is exactly what should
     be done.
     """
-    assert string is not None  # or shlex will read from stdin
-    if not six.PY3:
-        # On 2.6, shlex fails miserably with unicode input
-        is_unicode = isinstance(string, unicode)
-        if is_unicode:
-            string = string.encode('utf8')
+    assert string is not None   # or shlex will read from stdin
     l = shlex.shlex(string, posix=True)
     l.whitespace += ','
     l.whitespace_split = True
     l.quotes = ''
-    if not six.PY3 and is_unicode:
-        return map(lambda s: s.decode('utf8'), list(l))
-    else:
-        return list(l)
+    return list(l)
 
 
 class option(tuple):
@@ -71,7 +59,6 @@ class option(tuple):
 
     See ``parse_options()`` and ``Filter.options``.
     """
-
     def __new__(cls, initarg, configvar=None, type=None):
         # If only one argument given, it is the configvar
         if configvar is None:
@@ -152,7 +139,8 @@ class Filter(object):
             else:
                 setattr(self, attribute, None)
         if kwargs:
-            raise TypeError('got an unexpected keyword argument: %s' % list(kwargs.keys())[0])
+            raise TypeError('got an unexpected keyword argument: %s' %
+                            list(kwargs.keys())[0])
 
     def __eq__(self, other):
         if isinstance(other, Filter):
@@ -163,7 +151,8 @@ class Filter(object):
         """This is called before the filter is used."""
         self.ctx = ctx
 
-    def get_config(self, setting=False, env=None, require=True, what='dependency', type=None):
+    def get_config(self, setting=False, env=None, require=True,
+                   what='dependency', type=None):
         """Helper function that subclasses can use if they have
         dependencies which they cannot automatically resolve, like
         an external binary.
@@ -203,9 +192,6 @@ class Filter(object):
         if value is None and not env is False:
             value = os.environ.get(env)
             if value is not None:
-                if not six.PY3:
-                    # TODO: What charset should we use? What does Python 3 use?
-                    value = value.decode('utf8')
                 if type == list:
                     value = smartsplit(value, ',')
 
@@ -241,12 +227,7 @@ class Filter(object):
         """
         # freezedicts() allows filters to return dict objects as part
         # of unique(), which are not per-se supported by hash().
-        return hash_func(
-            (
-                self.name,
-                freezedicts(self.unique()),
-            )
-        )
+        return hash_func((self.name, freezedicts(self.unique()),))
 
     def setup(self):
         """Overwrite this to have the filter do initial setup work,
@@ -269,7 +250,9 @@ class Filter(object):
             if getattr(self, attribute) is None:
                 # No value specified for this filter instance ,
                 # specifically attempt to load it from the environment.
-                setattr(self, attribute, self.get_config(setting=configvar, require=False, type=type))
+                setattr(self, attribute,
+                        self.get_config(setting=configvar, require=False,
+                                        type=type))
 
     def input(self, _in, out, **kw):
         """Implement your actual filter here.
@@ -294,12 +277,12 @@ class Filter(object):
     def concat(self, out, hunks, **kw):
         """Implement your actual filter here.
 
-        Will be called once between the input() and output()
-        steps, and should concat all the source files (given as hunks)
-        together, writing the result to the ``out`` stream.
+       Will be called once between the input() and output()
+       steps, and should concat all the source files (given as hunks)
+       together, writing the result to the ``out`` stream.
 
-        Only one such filter is allowed.
-        """
+       Only one such filter is allowed.
+       """
 
     def get_additional_cache_keys(self, **kw):
         """Additional cache keys dependent on keyword arguments.
@@ -387,7 +370,8 @@ class ExternalToolMetaclass(type):
         methods = ('output', 'input', 'open')
 
         if chosen is not None:
-            assert not chosen or chosen in methods, '%s not a supported filter method' % chosen
+            assert not chosen or chosen in methods, \
+                '%s not a supported filter method' % chosen
             # Disable those methods not chosen.
             for m in methods:
                 if m != chosen:
@@ -452,7 +436,6 @@ class ExternalTool(six.with_metaclass(ExternalToolMetaclass, Filter)):
                     if e.args[0] not in ('input', 'output'):
                         raise
                     return arg
-
             argv = list(map(replace, self.argv))
         else:
             argv = self.argv
@@ -462,7 +445,7 @@ class ExternalTool(six.with_metaclass(ExternalToolMetaclass, Filter)):
     def subprocess(cls, argv, out, data=None, cwd=None):
         """Execute the commandline given by the list in ``argv``.
 
-        If a byestring is given via ``data``, it is piped into data.
+        If a bytestring is given via ``data``, it is piped into data.
 
         If ``cwd`` is not None, the process will be executed in that directory.
 
@@ -491,17 +474,19 @@ class ExternalTool(six.with_metaclass(ExternalToolMetaclass, Filter)):
         # Replace input and output placeholders
         input_file = tempfile_on_demand()
         output_file = tempfile_on_demand()
-        if hasattr(str, 'format'):  # Support Python 2.5 without the feature
-            argv = list(map(lambda item: item.format(input=input_file, output=output_file), argv))
+        if hasattr(str, 'format'):   # Support Python 2.5 without the feature
+            argv = list(map(lambda item:
+                       item.format(input=input_file, output=output_file), argv))
 
         try:
-            data = data.read() if hasattr(data, 'read') else data
-            if isinstance(data, type(u'')):
+            data = (data.read() if hasattr(data, 'read') else data)
+            if isinstance(data, str):
                 data = data.encode('utf-8')
 
             if input_file.created:
                 if data is None:
-                    raise ValueError('{input} placeholder given, but no data passed')
+                    raise ValueError(
+                        '{input} placeholder given, but no data passed')
                 with open(input_file.filename, 'wb') as f:
                     f.write(data)
                     # No longer pass to stdin
@@ -515,28 +500,27 @@ class ExternalTool(six.with_metaclass(ExternalToolMetaclass, Filter)):
                     stdin=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     cwd=cwd,
-                    shell=os.name == 'nt',
-                )
+                    shell=os.name == 'nt')
             except OSError:
                 raise FilterError('Program file not found: %s.' % argv[0])
             stdout, stderr = proc.communicate(data)
             if proc.returncode:
                 raise FilterError(
                     '%s: subprocess returned a non-success result code: '
-                    '%s, stdout=%s, stderr=%s'
-                    % (
+                    '%s, stdout=%s, stderr=%s' % (
                         cls.name or cls.__name__,
                         proc.returncode,
                         stdout.decode('utf-8').strip(),
-                        stderr.decode('utf-8').strip(),
-                    )
-                )
+                        stderr.decode('utf-8').strip()))
             else:
                 if output_file.created:
                     with open(output_file.filename, 'rb') as f:
                         out.write(f.read().decode('utf-8'))
                 else:
-                    out.write(stdout.decode('utf-8'))
+                    if isinstance(stdout, bytes):
+                        out.write(stdout.decode('utf-8'))
+                    else:
+                        out.write(stdout)
         finally:
             if output_file.created:
                 os.unlink(output_file.filename)
@@ -594,14 +578,16 @@ class JavaTool(ExternalTool):
             self.java_bin = 'java'
 
     def subprocess(self, args, out, data=None):
-        ExternalTool.subprocess([self.java_bin, '-jar', self.jar] + args, out, data)
+        ExternalTool.subprocess(
+            [self.java_bin, '-jar', self.jar] + args, out, data)
 
 
 _FILTERS = {}
 
 
 def register_filter(f):
-    """Add the given filter to the list of know filters."""
+    """Add the given filter to the list of know filters.
+    """
     if not issubclass(f, Filter):
         raise ValueError("Must be a subclass of 'Filter'")
     if not f.name:
@@ -622,7 +608,7 @@ def get_filter(f, *args, **kwargs):
         # Don't need to do anything.
         assert not args and not kwargs
         return f
-    elif isinstance(f, six.string_types):
+    elif isinstance(f, str):
         if f in _FILTERS:
             klass = _FILTERS[f]
         else:
@@ -636,7 +622,6 @@ def get_filter(f, *args, **kwargs):
         raise ValueError('Unable to resolve to a filter: %s' % f)
 
     return klass(*args, **kwargs)
-
 
 CODE_FILES = ['.py', '.pyc', '.so']
 
@@ -654,13 +639,15 @@ def is_module(name):
     """
     for ext in CODE_FILES:
         if name.endswith(ext):
-            return name[: -len(ext)]
+            return name[:-len(ext)]
 
 
 def is_package(directory):
-    """Is the (fully qualified) directory a python package?"""
+    """Is the (fully qualified) directory a python package?
+
+    """
     for ext in ['.py', '.pyc']:
-        if os.path.exists(os.path.join(directory, '__init__' + ext)):
+        if os.path.exists(os.path.join(directory, '__init__'+ext)):
             return True
 
 
@@ -717,11 +704,12 @@ def load_builtin_filters():
             module_names.append(elm)
 
     for module_name in module_names:
-        # module_name = 'webassets.filter.%s' % name
+        #module_name = 'webassets.filter.%s' % name
         try:
             module = import_module(module_name)
         except Exception as e:
-            warnings.warn('Error while loading builtin filter ' 'module \'%s\': %s' % (module_name, e))
+            warnings.warn('Error while loading builtin filter '
+                          'module \'%s\': %s' % (module_name, e))
         else:
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
@@ -731,6 +719,4 @@ def load_builtin_filters():
                         # considered abstract base classes.
                         continue
                     register_filter(attr)
-
-
 load_builtin_filters()

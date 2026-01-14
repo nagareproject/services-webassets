@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import warnings
 
 from webassets.filter import Filter
@@ -32,7 +31,6 @@ class JSMin(Filter):
 
     def setup(self):
         import jsmin
-
         self.jsmin = jsmin
 
     def output(self, _in, out, **kw):

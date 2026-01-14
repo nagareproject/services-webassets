@@ -2,37 +2,25 @@
 implementations.
 """
 
-from __future__ import with_statement
-
 import os
 import pickle
-from webassets import six
 
 from webassets.merge import FileHunk
 from webassets.utils import md5_constructor, RegistryMetaclass, is_url
 
 
-__all__ = (
-    'get_versioner',
-    'VersionIndeterminableError',
-    'Version',
-    'TimestampVersion',
-    'get_manifest',
-    'HashVersion',
-    'Manifest',
-    'FileManifest',
-)
+__all__ = ('get_versioner', 'VersionIndeterminableError',
+           'Version', 'TimestampVersion',
+           'get_manifest', 'HashVersion', 'Manifest', 'FileManifest',)
 
 
 class VersionIndeterminableError(Exception):
     pass
 
 
-class Version(
-    six.with_metaclass(
-        RegistryMetaclass(clazz=lambda: Version, attribute='determine_version', desc='a version implementation')
-    )
-):
+class Version(metaclass=RegistryMetaclass(
+    clazz=lambda: Version, attribute='determine_version',
+    desc='a version implementation')):
     """A Version class that can be assigned to the ``Environment.versioner``
     attribute.
 
@@ -99,7 +87,6 @@ class TimestampVersion(Version):
         # Note that this works because of our ``save_done`` hook.
         if not hunk:
             from webassets.bundle import has_placeholder
-
             if not has_placeholder(bundle.output):
                 return self.get_timestamp(bundle.resolve_output(ctx))
 
@@ -112,7 +99,9 @@ class TimestampVersion(Version):
             # Source files are missing. Under these circumstances, we cannot
             # return a proper version.
             assert hunk is None
-            raise VersionIndeterminableError('source files are missing and output target has a ' 'placeholder')
+            raise VersionIndeterminableError(
+                'source files are missing and output target has a '
+                'placeholder')
 
     def set_version(self, bundle, ctx, filename, version):
         # Update the mtime of the newly created file with the version
@@ -120,12 +109,11 @@ class TimestampVersion(Version):
 
     @classmethod
     def get_timestamp(cls, filename):
-        return int(os.stat(filename).st_mtime)  # Let OSError pass
+        return int(os.stat(filename).st_mtime)    # Let OSError pass
 
     @classmethod
     def find_recent_most_timestamp(cls, bundle, ctx):
         from webassets.bundle import get_all_bundle_files
-
         # Recurse through the bundle hierarchy. Check the timestamp of all
         # the bundle source files, as well as any additional
         # dependencies that we are supposed to watch.
@@ -164,23 +152,22 @@ class HashVersion(Version):
     def determine_version(self, bundle, ctx, hunk=None):
         if not hunk:
             from webassets.bundle import has_placeholder
-
             if not has_placeholder(bundle.output):
                 hunk = FileHunk(bundle.resolve_output(ctx))
             else:
                 # Can cannot determine the version of placeholder files.
-                raise VersionIndeterminableError('output target has a placeholder')
+                raise VersionIndeterminableError(
+                    'output target has a placeholder')
 
         data = hunk.data()
-        if isinstance(data, type(u'')):
+        if isinstance(data, str):
             data = data.encode('utf-8')
 
-        hasher = self.hasher()
-        hasher.update(data)
-        return hasher.hexdigest()[: self.length]
+        return self.hasher(data).hexdigest()[:self.length]
 
 
-class Manifest(six.with_metaclass(RegistryMetaclass(clazz=lambda: Manifest, desc='a manifest implementation'))):
+class Manifest(metaclass=RegistryMetaclass(
+    clazz=lambda: Manifest, desc='a manifest implementation')):
     """Persists information about the versions bundles are at.
 
     The Manifest plays a role only if you insert the bundle version in your
@@ -308,7 +295,9 @@ class CacheManifest(Manifest):
 
     def _check(self, ctx):
         if not ctx.cache:
-            raise EnvironmentError('You are using the cache manifest, but have not ' 'enabled the cache.')
+            raise EnvironmentError(
+                'You are using the cache manifest, but have not '
+                'enabled the cache.')
 
     def remember(self, bundle, ctx, version):
         self._check(ctx)
@@ -330,4 +319,4 @@ class SymlinkManifest(Manifest):
     # shouldn't, would only we usable to resolve placeholders in filenames.
 
     def __init__(self):
-        raise NotImplementedError()  # TODO
+        raise NotImplementedError()   # TODO

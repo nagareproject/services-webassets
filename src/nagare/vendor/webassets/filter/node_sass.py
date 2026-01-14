@@ -6,7 +6,7 @@ from webassets.exceptions import FilterError
 from .sass import Sass
 
 
-__all__ = ('NodeSass',)
+__all__ = ('NodeSass', )
 
 
 class NodeSass(Sass):
@@ -57,35 +57,33 @@ class NodeSass(Sass):
             os.chdir(cd)
 
         try:
-            args = [self.binary or 'node-sass', '--output-style', self.style or 'expanded']
+            args = [self.binary or 'node-sass',
+                    '--output-style', self.style or 'expanded']
 
             if not self.use_scss:
                 args.append("--indented-syntax")
 
-            if self.ctx.environment.debug if self.debug_info is None else self.debug_info:
+            if (self.ctx.environment.debug if self.debug_info is None else self.debug_info):
                 args.append('--debug-info')
             for path in self.load_paths or []:
                 args.extend(['--include-path', path])
 
-            if self.cli_args:
+            if (self.cli_args):
                 args.extend(self.cli_args)
 
-            proc = subprocess.Popen(
-                args,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                # shell: necessary on windows to execute
-                # ruby files, but doesn't work on linux.
-                shell=(os.name == 'nt'),
-            )
+            proc = subprocess.Popen(args,
+                                    stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    # shell: necessary on windows to execute
+                                    # ruby files, but doesn't work on linux.
+                                    shell=(os.name == 'nt'))
             stdout, stderr = proc.communicate(_in.read().encode('utf-8'))
 
             if proc.returncode != 0:
-                raise FilterError(
-                    ('sass: subprocess had error: stderr=%s, ' + 'stdout=%s, returncode=%s')
-                    % (stderr, stdout, proc.returncode)
-                )
+                raise FilterError(('sass: subprocess had error: stderr=%s, '+
+                                   'stdout=%s, returncode=%s') % (
+                                                stderr, stdout, proc.returncode))
             elif stderr:
                 print("node-sass filter has warnings:", stderr)
 
@@ -96,7 +94,8 @@ class NodeSass(Sass):
 
 
 class NodeSCSS(NodeSass):
-    """Version of the ``node-sass`` filter that uses the SCSS syntax."""
+    """Version of the ``node-sass`` filter that uses the SCSS syntax.
+    """
 
     name = 'node-scss'
 

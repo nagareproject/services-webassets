@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import shlex
 from os import path, getcwd
 
@@ -96,15 +94,15 @@ class RequireJSFilter(ExternalTool):
         server-side compilation in debug.
     '''
 
-    name = 'requirejs'
-    method = 'open'
+    name    = 'requirejs'
+    method  = 'open'
     options = {
-        'executable': ('executable', 'REQUIREJS_BIN'),
-        'config': ('config', 'REQUIREJS_CONFIG'),
-        'baseUrl': ('baseUrl', 'REQUIREJS_BASEURL'),
-        'optimize': ('optimize', 'REQUIREJS_OPTIMIZE'),
-        'extras': ('extras', 'REQUIREJS_EXTRAS'),
-        'run_in_debug': ('run_in_debug', 'REQUIREJS_RUN_IN_DEBUG'),
+      'executable'    : ('executable',    'REQUIREJS_BIN'),
+      'config'        : ('config',        'REQUIREJS_CONFIG'),
+      'baseUrl'       : ('baseUrl',       'REQUIREJS_BASEURL'),
+      'optimize'      : ('optimize',      'REQUIREJS_OPTIMIZE'),
+      'extras'        : ('extras',        'REQUIREJS_EXTRAS'),
+      'run_in_debug'  : ('run_in_debug',  'REQUIREJS_RUN_IN_DEBUG'),
     }
 
     max_debug_level = None
@@ -122,22 +120,29 @@ class RequireJSFilter(ExternalTool):
             self.argv = ['r.js']
 
         if self.config:
-            rel_config = path.join(path.relpath(self.ctx.directory, getcwd()), self.config)
+            rel_config = path.join(
+                path.relpath(
+                    self.ctx.directory,
+                    getcwd()
+                ),
+                self.config
+            )
         if not self.baseUrl:
-            self.baseUrl = path.relpath(self.ctx.directory, getcwd())
+            self.baseUrl = path.relpath(
+                self.ctx.directory,
+                getcwd()
+            )
 
         self.argv.extend(
             filter(
                 None,
-                [
-                    '-o',
-                    rel_config if self.config else None,
-                    'name={modname}',
-                    'out={{output}}',
-                    'baseUrl=' + self.baseUrl if self.baseUrl else None,
-                    'optimize=' + self.optimize if self.optimize else None,
-                ],
-            )
+                ['-o',
+                 rel_config if self.config else None,
+                 'name={modname}',
+                 'out={{output}}',
+                 'baseUrl=' + self.baseUrl if self.baseUrl else None,
+                 'optimize=' + self.optimize if self.optimize else None,
+             ])
         )
         if self.extras:
             self.argv.extend(shlex.split(self.extras))
@@ -154,8 +159,8 @@ class RequireJSFilter(ExternalTool):
             name = path.abspath(source_path)
             if not name.startswith(base):
                 raise ValueError(
-                    'requested AMD script "%s" does not exist in baseUrl "%s"' % (source_path, self.baseUrl)
-                )
-            name = name[len(base) + 1 :]
+                    'requested AMD script "%s" does not exist in baseUrl "%s"'
+                    % (source_path, self.baseUrl))
+            name = name[len(base) + 1:]
         kw['modname'] = path.splitext(name)[0]
         return super(RequireJSFilter, self).open(out, source_path, **kw)

@@ -1,6 +1,5 @@
 import os
 import re
-
 try:
     import json
 except ImportError:
@@ -32,10 +31,11 @@ class JSTemplateFilter(Filter):
         In other words, each template gets the shortest possible
         name to identify it.
         """
-        base_path = self._find_base_path([info['source_path'] for _, info in hunks]) + os.path.sep
+        base_path = self._find_base_path(
+            [info['source_path'] for _, info in hunks]) + os.path.sep
         for hunk, info in hunks:
             name = info['source_path']
-            name = name[len(base_path) :]
+            name = name[len(base_path):]
             name = os.path.splitext(name)[0]
             yield name, hunk
 
@@ -129,7 +129,6 @@ class JST(JSTemplateFilter):
     .. _Jammit:
     .. _underscore.js: http://documentcloud.github.com/underscore/#template
     """
-
     name = 'jst'
     options = {
         # The JavaScript compiler function to use
@@ -139,13 +138,14 @@ class JST(JSTemplateFilter):
         # Wrap everything in a closure
         'bare': 'JST_BARE',
         # The path separator to use with templates in different directories
-        'separator': 'JST_DIR_SEPARATOR',
+        'separator': 'JST_DIR_SEPARATOR'
     }
     max_debug_level = None
 
     def setup(self):
         super(JST, self).setup()
-        self.include_jst_script = (self.template_function == 'template') or self.template_function is None
+        self.include_jst_script = (self.template_function == 'template') \
+                                  or self.template_function is None
 
     def process_templates(self, out, hunks, **kwargs):
         namespace = self.namespace or 'window.JST'
@@ -166,7 +166,8 @@ class JST(JSTemplateFilter):
             if self.template_function is False:
                 out.write("%s;\n" % (contents))
             else:
-                out.write("%s(%s);\n" % (self.template_function or 'template', contents))
+                out.write("%s(%s);\n" % (
+                    self.template_function or 'template', contents))
 
         if self.bare is False:
             out.write("})();")

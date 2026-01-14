@@ -3,7 +3,6 @@
 This is included in the webassets package because it is useful for testing
 external libraries that use webassets (like the flask-assets wrapper).
 """
-from __future__ import print_function
 
 import tempfile
 import shutil
@@ -12,14 +11,9 @@ from os import path
 import time
 
 from webassets import Environment, Bundle
-from webassets.six.moves import map
-from webassets.six.moves import zip
 
 
-__all__ = (
-    'TempDirHelper',
-    'TempEnvironmentHelper',
-)
+__all__ = ('TempDirHelper', 'TempEnvironmentHelper',)
 
 
 class TempDirHelper(object):
@@ -30,19 +24,19 @@ class TempDirHelper(object):
 
     default_files = {}
 
-    def setup(self):
+    def setup_method(self):
         self._tempdir_created = tempfile.mkdtemp()
         self.create_files(self.default_files)
 
-    def teardown(self):
+    def teardown_method(self):
         shutil.rmtree(self._tempdir_created)
 
     def __enter__(self):
-        self.setup()
+        self.setup_method()
         return self
 
     def __exit__(self, type, value, traceback):
-        self.teardown()
+        self.teardown_method()
 
     @property
     def tempdir(self):
@@ -56,7 +50,6 @@ class TempDirHelper(object):
         the media directory of the current test run.
         """
         import codecs
-
         # Allow passing a list of filenames to create empty files
         if not hasattr(files, 'items'):
             files = dict(map(lambda n: (n, ''), files))
@@ -86,7 +79,8 @@ class TempDirHelper(object):
         return path.exists(self.path(name))
 
     def get(self, name):
-        """Return the given file's contents."""
+        """Return the given file's contents.
+        """
         with open(self.path(name)) as f:
             r = f.read()
             print(repr(r))
@@ -111,7 +105,7 @@ class TempDirHelper(object):
         """
         mtime = kwargs.pop('mtime', time.time())
         mtime += kwargs.pop('mod', 0)
-        assert not kwargs, "Unsupported kwargs: %s" % ', '.join(kwargs.keys())
+        assert not kwargs, "Unsupported kwargs: %s" %  ', '.join(kwargs.keys())
         for f in files:
             os.utime(self.path(f), (mtime, mtime))
         return mtime
@@ -121,7 +115,7 @@ class TempDirHelper(object):
         for some quick debugging.
         """
         if not files:
-            files = ['out']  # This is a often used output filename
+            files = ['out']   # This is a often used output filename
         for f in files:
             content = self.get(f)
             print(f)
@@ -139,8 +133,8 @@ class TempEnvironmentHelper(TempDirHelper):
 
     default_files = {'in1': 'A', 'in2': 'B', 'in3': 'C', 'in4': 'D'}
 
-    def setup(self):
-        TempDirHelper.setup(self)
+    def setup_method(self):
+        TempDirHelper.setup_method(self)
 
         self.env = self._create_environment()
         # Unless we explicitly test it, we don't want to use the cache

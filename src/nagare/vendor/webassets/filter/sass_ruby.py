@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os, subprocess
 
 from webassets.filter import ExternalTool
@@ -98,7 +97,7 @@ class RubySass(ExternalTool):
         Passes ``--line-comments`` flag to sass which emit comments in the
         generated CSS indicating the corresponding source line.
 
-        Note that this option is disabled by Sass if ``--style compressed`` or
+	Note that this option is disabled by Sass if ``--style compressed`` or
         ``--debug-info`` options are provided.
 
         Enabled by default. To disable, set empty environment variable
@@ -119,8 +118,8 @@ class RubySass(ExternalTool):
 
     SASS_SOURCE_MAP
         If provided, this will generate source maps in the output depending
-        on the type specified. By default this will use Sass's ``auto``.
-        Possible values are ``auto``, ``file``, ``inline``, or ``none``.
+	on the type specified. By default this will use Sass's ``auto``.
+	Possible values are ``auto``, ``file``, ``inline``, or ``none``.
 
     SASS_LOAD_PATHS
         It should be a list of paths relatives to Environment.directory or absolute paths.
@@ -133,7 +132,6 @@ class RubySass(ExternalTool):
         These are fed into the -r flag of the sass command and
         is used to require ruby libraries before running sass.
     """
-
     # TODO: If an output filter could be passed the list of all input
     # files, the filter might be able to do something interesting with
     # it (for example, determine that all source files are in the same
@@ -149,7 +147,7 @@ class RubySass(ExternalTool):
         'load_paths': 'SASS_LOAD_PATHS',
         'libs': 'SASS_LIBS',
         'style': 'SASS_STYLE',
-        'source_map': 'SASS_SOURCE_MAP',
+	'source_map': 'SASS_SOURCE_MAP',
         'line_comments': 'SASS_LINE_COMMENTS',
     }
     max_debug_level = None
@@ -166,16 +164,19 @@ class RubySass(ExternalTool):
         if cd:
             child_cwd = cd
 
-        args = [self.binary or 'sass', '--stdin', '--style', self.style or 'expanded']
+        args = [self.binary or 'sass',
+                '--stdin',
+                '--style', self.style or 'expanded']
         if self.line_comments is None or self.line_comments:
             args.append('--line-comments')
         if isinstance(self.ctx.cache, FilesystemCache):
-            args.extend(['--cache-location', os.path.join(orig_cwd, self.ctx.cache.directory, 'sass')])
+            args.extend(['--cache-location',
+                         os.path.join(orig_cwd, self.ctx.cache.directory, 'sass')])
         elif not cd:
             # Without a fixed working directory, the location of the cache
             # is basically undefined, so prefer not to use one at all.
             args.extend(['--no-cache'])
-        if self.ctx.environment.debug if self.debug_info is None else self.debug_info:
+        if (self.ctx.environment.debug if self.debug_info is None else self.debug_info):
             args.append('--debug-info')
         if self.use_scss:
             args.append('--scss')
@@ -212,7 +213,8 @@ class RubySass(ExternalTool):
 
 
 class RubySCSS(RubySass):
-    """Version of the ``sass`` filter that uses the SCSS syntax."""
+    """Version of the ``sass`` filter that uses the SCSS syntax.
+    """
 
     name = 'scss_ruby'
 

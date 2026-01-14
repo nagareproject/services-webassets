@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from webassets.filter import Filter
 
 
@@ -27,4 +26,5 @@ class Slimit(Filter):
             self.slimit = slimit
 
     def output(self, _in, out, **kw):
-        out.write(self.slimit.minify(_in.read(), mangle=self.mangle, mangle_toplevel=self.mangle_toplevel))
+        out.write(self.slimit.minify(_in.read(),
+                mangle=self.mangle, mangle_toplevel=self.mangle_toplevel))

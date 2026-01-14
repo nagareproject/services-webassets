@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os, subprocess
 
 from webassets.filter import Filter
@@ -35,33 +34,28 @@ class CoffeeScript(Filter):
         binary = self.coffee_bin or self.coffee_deprecated or 'coffee'
         if self.coffee_deprecated:
             import warnings
-
             warnings.warn(
                 'The COFFEE_PATH option of the "coffeescript" '
-                + 'filter has been deprecated and will be removed.'
-                + 'Use COFFEE_BIN instead.',
-                ImminentDeprecationWarning,
-            )
+                +'filter has been deprecated and will be removed.'
+                +'Use COFFEE_BIN instead.', ImminentDeprecationWarning)
 
         args = "-sp" + ("" if self.no_bare else 'b')
         try:
-            proc = subprocess.Popen(
-                [binary, args],
+            proc = subprocess.Popen([binary, args],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                shell=(os.name == 'nt'),
-            )
+                shell=(os.name == 'nt'))
         except OSError as e:
             if e.errno == 2:
                 raise Exception("coffeescript not installed or in system path for webassets")
             raise
         stdout, stderr = proc.communicate(_in.read().encode('utf-8'))
         if proc.returncode != 0:
-            raise FilterError(
-                ('coffeescript: subprocess had error: stderr=%s, ' + 'stdout=%s, returncode=%s')
-                % (stderr, stdout, proc.returncode)
-            )
+            raise FilterError(('coffeescript: subprocess had error: stderr=%s, '+
+                               'stdout=%s, returncode=%s') % (
+                stderr, stdout, proc.returncode))
         elif stderr:
             print("coffeescript filter has warnings:", stderr)
         out.write(stdout.decode('utf-8'))
+

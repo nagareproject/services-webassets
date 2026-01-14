@@ -1,0 +1,278 @@
+diff --git a/src/webassets/cache.py b/src/webassets/cache.py
+index 53533de..2f22760 100644
+--- a/src/webassets/cache.py
++++ b/src/webassets/cache.py
+@@ -63,7 +63,8 @@ def make_md5(*data):
+                 for d in walk(k): yield d
+                 for d in walk(obj[k]): yield d
+         elif isinstance(obj, BaseHunk):
+-            yield obj.data().encode('utf-8')
++            data = obj.data()
++            yield data.encode('utf-8') if isinstance(data, str) else data
+         elif isinstance(obj, int):
+             yield str(obj).encode('utf-8')
+         elif isinstance(obj, str):
+diff --git a/src/webassets/env.py b/src/webassets/env.py
+index 1412676..461d194 100644
+--- a/src/webassets/env.py
++++ b/src/webassets/env.py
+@@ -111,7 +111,7 @@ class Resolver(object):
+         """
+         def glob_generator(basedir, expr):
+             expr = path.join(basedir, expr)
+-            for filename in glob.iglob(expr):
++            for filename in glob.iglob(expr, recursive=True):
+                 if path.isdir(filename):
+                     continue
+                 yield path.normpath(filename)
+diff --git a/src/webassets/filter/__init__.py b/src/webassets/filter/__init__.py
+index 409a797..259a895 100644
+--- a/src/webassets/filter/__init__.py
++++ b/src/webassets/filter/__init__.py
+@@ -480,7 +480,7 @@ class ExternalTool(six.with_metaclass(ExternalToolMetaclass, Filter)):
+
+         try:
+             data = (data.read() if hasattr(data, 'read') else data)
+-            if data is not None:
++            if isinstance(data, str):
+                 data = data.encode('utf-8')
+
+             if input_file.created:
+diff --git a/src/webassets/merge.py b/src/webassets/merge.py
+index 27f69bb..9ac4aff 100644
+--- a/src/webassets/merge.py
++++ b/src/webassets/merge.py
+@@ -3,7 +3,7 @@
+ import contextlib
+
+ import logging
+-from io import open
++from io import open, BytesIO
+ from urllib.request import Request as URLRequest, urlopen
+ from urllib.error import HTTPError
+
+@@ -50,8 +50,12 @@ class BaseHunk(object):
+         raise NotImplementedError()
+
+     def save(self, filename):
+-        with open(filename, 'w', encoding='utf-8') as f:
+-            f.write(self.data())
++        data = self.data()
++        if isinstance(data, str):
++            data = data.encode('utf-8')
++
++        with open(filename, 'wb') as f:
++            f.write(data)
+
+
+ class FileHunk(BaseHunk):
+@@ -68,7 +72,7 @@ class FileHunk(BaseHunk):
+         pass
+
+     def data(self):
+-        f = open(self.filename, 'r', encoding='utf-8')
++        f = open(self.filename, 'rb')
+         try:
+             return f.read()
+         finally:
+@@ -114,8 +118,8 @@ class UrlHunk(BaseHunk):
+             else:
+                 with contextlib.closing(response):
+                     data = response.read()
+-                if isinstance(data, bytes):
+-                    data = data.decode('utf-8')
++                #if isinstance(data, bytes):
++                #    data = data.decode('utf-8')
+                 self._data = data
+
+                 # Cache the info from this request
+@@ -155,11 +159,11 @@ class MemoryHunk(BaseHunk):
+         return self._data
+
+     def save(self, filename):
+-        f = open(filename, 'w', encoding='utf-8')
+-        try:
+-            f.write(self.data())
+-        finally:
+-            f.close()
++        data = self.data()
++        if isinstance(data, str):
++            data = data.encode('utf-8')
++        with open(filename, 'wb'):
++            f.write(data)
+
+
+ def merge(hunks, separator=None):
+@@ -168,9 +172,18 @@ def merge(hunks, separator=None):
+     # TODO: combine the list of source files, we'd like to collect them
+     # The linebreak is important in certain cases for Javascript
+     # files, like when a last line is a //-comment.
+-    if not separator:
++    datas = [h.data() for h in hunks]
++    is_str = [isinstance(data, str) for data in datas]
++
++    if all(is_str):
++        separator = '\n'
++    elif not any(is_str):
++        separator = b''
++    else:
++        datas = [data if isinstance(data, str) else data.decode('utf-8')]
+         separator = '\n'
+-    return MemoryHunk(separator.join([h.data() for h in hunks]))
++
++    return MemoryHunk(separator.join(datas))
+
+
+ class MoreThanOneFilterError(Exception):
+@@ -180,6 +193,27 @@ class MoreThanOneFilterError(Exception):
+         self.filters = filters
+
+
++def create_input_buffer_for(data):
++    return (StringIO if isinstance(data, str) else BytesIO)(data)
++
++
++def convert_input_buffer_for(filter, data):
++    accepts_binary = getattr(filter, 'binary_input', False)
++    is_binary = not isinstance(data, str)
++
++    if accepts_binary and not is_binary:
++        data = data.getvalue().encode('utf-8')
++
++    if not accepts_binary and is_binary:
++        data = data.decode('utf-8')
++
++    return create_input_buffer_for(data)
++
++
++def create_output_buffer_for(filter):
++    return BytesIO() if getattr(filter, 'binary_output', False) else StringIO()
++
++
+ class NoFilters(Exception):
+     pass
+
+@@ -240,11 +274,12 @@ class FilterTool(object):
+         kwargs_final.update(kwargs or {})
+
+         def func():
+-            data = StringIO(hunk.data())
++            data = create_input_buffer_for(hunk.data())
+             for filter in filters:
++                data = convert_input_buffer_for(filter, data.read())
++                out = create_output_buffer_for(filter)
+                 log.debug('Running method "%s" of  %s with kwargs=%s',
+                     type, filter, kwargs_final)
+-                out = StringIO(u'') # For 2.x, StringIO().getvalue() returns str
+                 getattr(filter, type)(data, out, **kwargs_final)
+                 data = out
+                 data.seek(0)
+@@ -303,7 +338,7 @@ class FilterTool(object):
+
+         def func():
+             filter = filters[0]
+-            out = StringIO(u'')  # For 2.x, StringIO().getvalue() returns str
++            out = create_output_buffer_for(filter)
+             log.debug('Running method "%s" of %s with args=%s, kwargs=%s',
+                 type, filter, args, kwargs)
+             getattr(filter, type)(out, *args, **kwargs_final)
+diff --git a/src/webassets/script.py b/src/webassets/script.py
+index e47c3d3..1039a96 100644
+--- a/src/webassets/script.py
++++ b/src/webassets/script.py
+@@ -5,7 +5,7 @@ import logging
+ from io import StringIO
+
+ from webassets.loaders import PythonLoader, YAMLLoader
+-from webassets.bundle import get_all_bundle_files
++from webassets.bundle import get_all_bundle_files, Bundle
+ from webassets.exceptions import BuildError
+ from webassets.updater import TimestampUpdater
+ from webassets.merge import MemoryHunk
+@@ -160,8 +160,8 @@ class BuildCommand(Command):
+             if name:
+                 # A name is not necessary available of the bundle was
+                 # registered without one.
+-                self.log.info("Building bundle: %s (to %s)" % (
+-                    name, overwrite_filename or bundle.output))
++                output_name = overwrite_filename or bundle.output
++                self.log.info("Building bundle: %s%s" % (name, (' (to %s)' % output_name) if output_name else ''))
+             else:
+                 self.log.info("Building bundle: %s" % bundle.output)
+
+@@ -288,17 +288,22 @@ class WatchCommand(Command):
+
+ class CleanCommand(Command):
+
+-    def __call__(self):
+-        """Delete generated assets.
+-        """
+-        self.log.info('Cleaning generated assets...')
+-        for bundle in self.environment:
++    def clean(self, bundles):
++        for bundle in bundles:
++            self.clean(b for b in bundle.contents if isinstance(b, Bundle))
+             if not bundle.output:
+                 continue
++
+             file_path = bundle.resolve_output(self.environment)
+             if os.path.exists(file_path):
+                 os.unlink(file_path)
+                 self.log.info("Deleted asset: %s" % bundle.output)
++
++    def __call__(self):
++        """Delete generated assets.
++        """
++        self.log.info('Cleaning generated assets...')
++        self.clean(self.environment)
+         if isinstance(self.environment.cache, FilesystemCache):
+             shutil.rmtree(self.environment.cache.directory)
+
+@@ -317,11 +322,12 @@ class CheckCommand(Command):
+         if not updater:
+             self.log.debug('no updater configured, using TimestampUpdater')
+             updater = TimestampUpdater()
+-        for bundle in self.environment:
+-            self.log.info('Checking asset: %s', bundle.output)
++        for name, bundle in self.environment._named_bundles.items():
++            msg = ''
+             if updater.needs_rebuild(bundle, self.environment):
+-                self.log.info('  needs update')
+                 needsupdate = True
++                msg = ' *** needs update ***'
++            self.log.info('Checking asset: %s%s%s', name, (' (%s)' % bundle.output) if bundle.output else '', msg)
+         if needsupdate:
+             sys.exit(-1)
+
+diff --git a/src/webassets/updater.py b/src/webassets/updater.py
+index 3347ebe..63be80e 100644
+--- a/src/webassets/updater.py
++++ b/src/webassets/updater.py
+@@ -115,7 +115,7 @@ class TimestampUpdater(BundleDefUpdater):
+         from .bundle import Bundle
+         from webassets.version import TimestampVersion
+
+-        if not o_modified:
++        if not o_modified and bundle.output:
+             try:
+                 resolved_output = bundle.resolve_output(ctx)
+             except BundleError:
+diff --git a/src/webassets/version.py b/src/webassets/version.py
+index ffc59ee..d4e7a86 100644
+--- a/src/webassets/version.py
++++ b/src/webassets/version.py
+@@ -159,9 +159,11 @@ class HashVersion(Version):
+                 raise VersionIndeterminableError(
+                     'output target has a placeholder')
+
+-        hasher = self.hasher()
+-        hasher.update(hunk.data().encode('utf-8'))
+-        return hasher.hexdigest()[:self.length]
++        data = hunk.data()
++        if isinstance(data, str):
++            data = data.encode('utf-8')
++
++        return self.hasher(data).hexdigest()[:self.length]
+
+
+ class Manifest(metaclass=RegistryMetaclass(

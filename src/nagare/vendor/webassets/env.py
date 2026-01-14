@@ -1,8 +1,6 @@
 import os
 from os import path
 from itertools import chain
-from webassets import six
-from webassets.six.moves import map
 from webassets.utils import is_url
 
 try:
@@ -109,9 +107,8 @@ class Resolver(object):
 
     def glob(self, basedir, expr):
         """Evaluates a glob expression.
-        Yields a sorted list of absolute filenames.
+         Yields a sorted list of absolute filenames.
         """
-
         def glob_generator(basedir, expr):
             expr = path.join(basedir, expr)
             for filename in glob.iglob(expr, recursive=True):
@@ -166,7 +163,8 @@ class Resolver(object):
                 result = self.glob(path, item)
                 if result:
                     return result
-            raise IOError("'%s' not found in load path: %s" % (item, ctx.load_path))
+            raise IOError("'%s' not found in load path: %s" % (
+                item, ctx.load_path))
 
     def search_for_source(self, ctx, item):
         """Called by :meth:`resolve_source` after determining that
@@ -198,14 +196,16 @@ class Resolver(object):
             pass
 
         # Make sure paths are absolute, normalized, and sorted by length
-        mapping = list(map(lambda p_u: (path.normpath(path.abspath(p_u[0])), p_u[1]), mapping))
+        mapping = list(map(
+            lambda p_u: (path.normpath(path.abspath(p_u[0])), p_u[1]),
+            mapping))
         mapping.sort(key=lambda i: len(i[0]), reverse=True)
 
         needle = path.normpath(filepath)
         for candidate, url in mapping:
             if needle.startswith(candidate):
                 # Found it!
-                rel_path = needle[len(candidate) + 1 :]
+                rel_path = needle[len(candidate) + 1:]
                 # If there are any subdirs in rel_path, ensure
                 # they use HTML-style path separators, in case
                 # the local OS (Windows!) has a different scheme
@@ -240,7 +240,7 @@ class Resolver(object):
         """
 
         # Pass through some things unscathed
-        if not isinstance(item, six.string_types):
+        if not isinstance(item, str):
             # Don't stand in the way of custom values.
             return item
         if is_url(item) or path.isabs(item):
@@ -300,12 +300,13 @@ class Resolver(object):
 
 
 class BundleRegistry(object):
+
     def __init__(self):
         self._named_bundles = {}
         self._anon_bundles = []
 
     def __iter__(self):
-        return chain(six.itervalues(self._named_bundles), self._anon_bundles)
+        return chain(self._named_bundles.values(), self._anon_bundles)
 
     def __getitem__(self, name):
         return self._named_bundles[name]
@@ -318,8 +319,7 @@ class BundleRegistry(object):
 
     def __bool__(self):
         return True
-
-    __nonzero__ = __bool__  # For Python 2
+    __nonzero__ = __bool__   # For Python 2
 
     def register(self, name, *args, **kwargs):
         """Register a :class:`Bundle` with the given ``name``.
@@ -369,12 +369,11 @@ class BundleRegistry(object):
                 if self._named_bundles[name] == bundle:
                     pass  # ignore
                 else:
-                    raise RegisterError(
-                        'Another bundle is already registered ' + 'as "%s": %s' % (name, self._named_bundles[name])
-                    )
+                    raise RegisterError('Another bundle is already registered ' +
+                                        'as "%s": %s' % (name, self._named_bundles[name]))
             else:
                 self._named_bundles[name] = bundle
-                bundle.env = self  # take ownership
+                bundle.env = self   # take ownership
 
             return bundle
 
@@ -388,7 +387,7 @@ class BundleRegistry(object):
         """
         for bundle in bundles:
             self._anon_bundles.append(bundle)
-            bundle.env = self  # take ownership
+            bundle.env = self    # take ownership
 
     def decompose_bundle(self, name, bundle):
         from .bundle import Bundle
@@ -420,7 +419,8 @@ class BundleRegistry(object):
         # The output might also contain `%(version)s` so I can't use
         # the C-style method of string formatting
         output = (
-            bundle.output.replace('%(name)s', filename)
+            bundle.output
+            .replace('%(name)s', filename)
             .replace('%(path)s', filepath)
             .replace('%(ext)s', fileext.strip('.'))
         )
@@ -442,19 +442,9 @@ class BundleRegistry(object):
 # their own namespacing, so they don't need to be prefixed. For example, a
 # filter setting might be CSSMIN_BIN.
 env_options = [
-    'directory',
-    'url',
-    'debug',
-    'cache',
-    'updater',
-    'auto_build',
-    'url_expire',
-    'versions',
-    'manifest',
-    'load_path',
-    'url_mapping',
-    'cache_file_mode',
-]
+    'directory', 'url', 'debug', 'cache', 'updater', 'auto_build',
+    'url_expire', 'versions', 'manifest', 'load_path', 'url_mapping',
+    'cache_file_mode' ]
 
 
 class ConfigurationContext(object):
@@ -480,14 +470,10 @@ class ConfigurationContext(object):
 
     def _set_debug(self, debug):
         self._storage['debug'] = debug
-
     def _get_debug(self):
         return self._storage['debug']
-
-    debug = property(
-        _get_debug,
-        _set_debug,
-        doc="""Enable/disable debug mode. Possible values are:
+    debug = property(_get_debug, _set_debug, doc=
+    """Enable/disable debug mode. Possible values are:
 
         ``False``
             Production mode. Bundles will be merged and filters applied.
@@ -496,19 +482,14 @@ class ConfigurationContext(object):
             files.
         *"merge"*
             Merge the source files, but do not apply filters.
-    """,
-    )
+    """)
 
     def _set_cache_file_mode(self, mode):
         self._storage['cache_file_mode'] = mode
-
     def _get_cache_file_mode(self):
         return self._storage['cache_file_mode']
-
-    cache_file_mode = property(
-        _get_cache_file_mode,
-        _set_cache_file_mode,
-        doc="""Controls the mode of files created in the cache. The default mode
+    cache_file_mode = property(_get_cache_file_mode, _set_cache_file_mode, doc=
+    """Controls the mode of files created in the cache. The default mode
     is 0600.  Follows standard unix mode.
     Possible values are any unix mode, e.g.:
 
@@ -518,22 +499,17 @@ class ConfigurationContext(object):
       ``0666``
           Enable world read+write bits
 
-    """,
-    )
+    """)
 
     def _set_cache(self, enable):
         self._storage['cache'] = enable
-
     def _get_cache(self):
         cache = get_cache(self._storage['cache'], self)
         if cache != self._storage['cache']:
             self._storage['cache'] = cache
         return cache
-
-    cache = property(
-        _get_cache,
-        _set_cache,
-        doc="""Controls the behavior of the cache. The cache will speed up rebuilding
+    cache = property(_get_cache, _set_cache, doc=
+    """Controls the behavior of the cache. The cache will speed up rebuilding
     of your bundles, by caching individual filter results. This can be
     particularly useful while developing, if your bundles would otherwise take
     a long time to rebuild.
@@ -549,19 +525,14 @@ class ConfigurationContext(object):
 
       *custom path*
          Use the given directory as the cache directory.
-    """,
-    )
+    """)
 
     def _set_auto_build(self, value):
         self._storage['auto_build'] = value
-
     def _get_auto_build(self):
         return self._storage['auto_build']
-
-    auto_build = property(
-        _get_auto_build,
-        _set_auto_build,
-        doc="""Controls whether bundles should be automatically built, and
+    auto_build = property(_get_auto_build, _set_auto_build, doc=
+    """Controls whether bundles should be automatically built, and
     rebuilt, when required (if set to ``True``), or whether they
     must be built manually be the user, for example via a management
     command.
@@ -573,22 +544,17 @@ class ConfigurationContext(object):
     process takes very long, then you may want to disable this.
 
     By default automatic building is enabled.
-    """,
-    )
+    """)
 
     def _set_manifest(self, manifest):
         self._storage['manifest'] = manifest
-
     def _get_manifest(self):
         manifest = get_manifest(self._storage['manifest'], env=self)
         if manifest != self._storage['manifest']:
             self._storage['manifest'] = manifest
         return manifest
-
-    manifest = property(
-        _get_manifest,
-        _set_manifest,
-        doc="""A manifest persists information about the versions bundles
+    manifest = property(_get_manifest, _set_manifest, doc=
+    """A manifest persists information about the versions bundles
     are at.
 
     The Manifest plays a role only if you insert the bundle version
@@ -628,22 +594,17 @@ class ConfigurationContext(object):
           No manifest is used.
 
       Any custom manifest implementation.
-    """,
-    )
+    """)
 
     def _set_versions(self, versions):
         self._storage['versions'] = versions
-
     def _get_versions(self):
         versions = get_versioner(self._storage['versions'])
         if versions != self._storage['versions']:
             self._storage['versions'] = versions
         return versions
-
-    versions = property(
-        _get_versions,
-        _set_versions,
-        doc="""Defines what should be used as a Bundle ``version``.
+    versions = property(_get_versions, _set_versions, doc=
+    """Defines what should be used as a Bundle ``version``.
 
     A bundle's version is what is appended to URLs when the
     ``url_expire`` option is enabled, and the version can be part
@@ -666,22 +627,17 @@ class ConfigurationContext(object):
 
       Any custom version implementation.
 
-    """,
-    )
+    """)
 
     def set_updater(self, updater):
         self._storage['updater'] = updater
-
     def get_updater(self):
         updater = get_updater(self._storage['updater'])
         if updater != self._storage['updater']:
             self._storage['updater'] = updater
         return updater
-
-    updater = property(
-        get_updater,
-        set_updater,
-        doc="""Controls how the ``auto_build`` option should determine
+    updater = property(get_updater, set_updater, doc=
+    """Controls how the ``auto_build`` option should determine
     whether a bundle needs to be rebuilt.
 
       ``"timestamp"`` (default)
@@ -692,19 +648,14 @@ class ConfigurationContext(object):
           Always rebuild bundles (avoid in production environments).
 
       Any custom version implementation.
-    """,
-    )
+    """)
 
     def _set_url_expire(self, url_expire):
         self._storage['url_expire'] = url_expire
-
     def _get_url_expire(self):
         return self._storage['url_expire']
-
-    url_expire = property(
-        _get_url_expire,
-        _set_url_expire,
-        doc="""If you send your assets to the client using a
+    url_expire = property(_get_url_expire, _set_url_expire, doc=
+    """If you send your assets to the client using a
     *far future expires* header (to minimize the 304 responses
     your server has to send), you need to make sure that assets
     will be reloaded by the browser when they change.
@@ -719,59 +670,46 @@ class ConfigurationContext(object):
     The default behavior (indicated by a ``None`` value) is to add
     an expiry querystring if the bundle does not use a version
     placeholder.
-    """,
-    )
+    """)
 
     def _set_directory(self, directory):
         self._storage['directory'] = directory
-
     def _get_directory(self):
         try:
             return path.abspath(self._storage['directory'])
         except KeyError:
-            raise EnvironmentError('The environment has no "directory" configured')
-
-    directory = property(
-        _get_directory,
-        _set_directory,
-        doc="""The base directory to which all paths will be relative to,
+            raise EnvironmentError(
+                'The environment has no "directory" configured')
+    directory = property(_get_directory, _set_directory, doc=
+    """The base directory to which all paths will be relative to,
     unless :attr:`load_path` are given, in which case this will
     only serve as the output directory.
 
     In the url space, it is mapped to :attr:`urls`.
-    """,
-    )
+    """)
 
     def _set_url(self, url):
         self._storage['url'] = url
-
     def _get_url(self):
         try:
             return self._storage['url']
         except KeyError:
-            raise EnvironmentError('The environment has no "url" configured')
-
-    url = property(
-        _get_url,
-        _set_url,
-        doc="""The url prefix used to construct urls for files in
+            raise EnvironmentError(
+                'The environment has no "url" configured')
+    url = property(_get_url, _set_url, doc=
+    """The url prefix used to construct urls for files in
     :attr:`directory`.
 
     To define url spaces for other directories, see
     :attr:`url_mapping`.
-    """,
-    )
+    """)
 
     def _set_load_path(self, load_path):
         self._storage['load_path'] = load_path
-
     def _get_load_path(self):
         return self._storage['load_path']
-
-    load_path = property(
-        _get_load_path,
-        _set_load_path,
-        doc="""An list of directories that will be searched for source files.
+    load_path = property(_get_load_path, _set_load_path, doc=
+    """An list of directories that will be searched for source files.
 
     If this is set, source files will only be looked for in these
     directories, and :attr:`directory` is used as a location for
@@ -787,34 +725,26 @@ class ConfigurationContext(object):
     To modify this list, you should use :meth:`append_path`, since
     it makes it easy to add the corresponding url prefix to
     :attr:`url_mapping`.
-    """,
-    )
+    """)
 
     def _set_url_mapping(self, url_mapping):
         self._storage['url_mapping'] = url_mapping
-
     def _get_url_mapping(self):
         return self._storage['url_mapping']
-
-    url_mapping = property(
-        _get_url_mapping,
-        _set_url_mapping,
-        doc="""A dictionary of directory -> url prefix mappings that will
+    url_mapping = property(_get_url_mapping, _set_url_mapping, doc=
+    """A dictionary of directory -> url prefix mappings that will
     be considered when generating urls, in addition to the pair of
     :attr:`directory` and :attr:`url`, which is always active.
 
     You should use :meth:`append_path` to add directories to the
     load path along with their respective url spaces, instead of
     modifying this setting directly.
-    """,
-    )
+    """)
 
     def _set_resolver(self, resolver):
         self._storage['resolver'] = resolver
-
     def _get_resolver(self):
         return self._storage['resolver']
-
     resolver = property(_get_resolver, _set_resolver)
 
 
@@ -853,34 +783,31 @@ class BaseEnvironment(BundleRegistry, ConfigurationContext):
 
     @property
     def config(self):
-        """Key-value configuration. Keys are case-insensitive."""
+        """Key-value configuration. Keys are case-insensitive.
+        """
         # This is a property so that user are not tempted to assign
         # a custom dictionary which won't uphold our caseless semantics.
         return self._config
 
 
 class DictConfigStorage(ConfigStorage):
-    """Using a lower-case dict for configuration values."""
-
+    """Using a lower-case dict for configuration values.
+    """
     def __init__(self, *a, **kw):
         self._dict = {}
         ConfigStorage.__init__(self, *a, **kw)
-
     def __contains__(self, key):
         return self._dict.__contains__(key.lower())
-
     def __getitem__(self, key):
         key = key.lower()
         value = self._get_deprecated(key)
         if not value is None:
             return value
         return self._dict.__getitem__(key)
-
     def __setitem__(self, key, value):
         key = key.lower()
         if not self._set_deprecated(key, value):
             self._dict.__setitem__(key.lower(), value)
-
     def __delitem__(self, key):
         self._dict.__delitem__(key.lower())
 

@@ -18,18 +18,13 @@ from os import path
 import errno
 import tempfile
 import warnings
-from webassets import six
 from webassets.merge import BaseHunk
 from webassets.filter import Filter, freezedicts
 from webassets.utils import md5_constructor, pickle
 import types
 
 
-__all__ = (
-    'FilesystemCache',
-    'MemoryCache',
-    'get_cache',
-)
+__all__ = ('FilesystemCache', 'MemoryCache', 'get_cache',)
 
 
 def make_hashable(data):
@@ -59,26 +54,22 @@ def make_md5(*data):
     MD5 is faster than sha, and we don't care so much about collisions.
     We care enough however not to use hash().
     """
-
     def walk(obj):
         if isinstance(obj, (tuple, list, frozenset)):
             for item in obj:
-                for d in walk(item):
-                    yield d
+                for d in walk(item): yield d
         elif isinstance(obj, (dict)):
             for k in sorted(obj.keys()):
-                for d in walk(k):
-                    yield d
-                for d in walk(obj[k]):
-                    yield d
+                for d in walk(k): yield d
+                for d in walk(obj[k]): yield d
         elif isinstance(obj, BaseHunk):
             data = obj.data()
-            yield data.encode('utf-8') if isinstance(data, type(u'')) else data
+            yield data.encode('utf-8') if isinstance(data, str) else data
         elif isinstance(obj, int):
             yield str(obj).encode('utf-8')
-        elif isinstance(obj, six.text_type):
+        elif isinstance(obj, str):
             yield obj.encode('utf-8')
-        elif isinstance(obj, six.binary_type):
+        elif isinstance(obj, bytes):
             yield obj
         elif hasattr(obj, "id"):
             for i in walk(obj.id()):
@@ -89,7 +80,6 @@ def make_md5(*data):
             yield str(hash(obj)).encode('utf-8')
         else:
             raise ValueError('Cannot MD5 type %s' % type(obj))
-
     md5 = md5_constructor()
     for d in walk(data):
         md5.update(d)
@@ -119,7 +109,8 @@ class BaseCache(object):
     """
 
     def get(self, key):
-        """Should return the cache contents, or False."""
+        """Should return the cache contents, or False.
+        """
         raise NotImplementedError()
 
     def set(self, key, value):
@@ -146,7 +137,9 @@ class MemoryCache(BaseCache):
         """Return equality with the config values that instantiate
         this instance.
         """
-        return False == other or None == other or id(self) == id(other)
+        return False == other or \
+               None == other or \
+               id(self) == id(other)
 
     def get(self, key):
         key = make_md5(make_hashable(key))
@@ -162,16 +155,17 @@ class MemoryCache(BaseCache):
         self.keys.append(key)
 
         # limit cache to the given capacity
-        to_delete = self.keys[0 : max(0, len(self.keys) - self.capacity)]
-        self.keys = self.keys[len(to_delete) :]
+        to_delete = self.keys[0:max(0, len(self.keys)-self.capacity)]
+        self.keys = self.keys[len(to_delete):]
         for item in to_delete:
             del self.cache[item]
 
 
 class FilesystemCache(BaseCache):
-    """Uses a temporary directory on the disk."""
+    """Uses a temporary directory on the disk.
+    """
 
-    V = 2  # We have changed the cache format once
+    V = 2   # We have changed the cache format once
 
     def __init__(self, directory, new_file_mode=None):
         self.directory = directory
@@ -181,7 +175,9 @@ class FilesystemCache(BaseCache):
         """Return equality with the config values
         that instantiate this instance.
         """
-        return True == other or self.directory == other or id(self) == id(other)
+        return True == other or \
+               self.directory == other or \
+               id(self) == id(other)
 
     def get(self, key):
         filename = path.join(self.directory, '%s' % make_md5(self.V, key))
@@ -204,7 +200,8 @@ class FilesystemCache(BaseCache):
     def set(self, key, data):
         md5 = '%s' % make_md5(self.V, key)
         filename = path.join(self.directory, md5)
-        fd, temp_filename = tempfile.mkstemp(prefix='.' + md5, dir=self.directory)
+        fd, temp_filename = tempfile.mkstemp(prefix='.' + md5,
+                dir=self.directory)
         try:
             with os.fdopen(fd, 'wb') as f:
                 pickle.dump(data, f)
@@ -222,7 +219,8 @@ class FilesystemCache(BaseCache):
 
 
 def get_cache(option, ctx):
-    """Return a cache instance based on ``option``."""
+    """Return a cache instance based on ``option``.
+    """
     if not option:
         return None
 

@@ -13,10 +13,12 @@ class JSPacker(Filter):
     Based on Dean Edwards' `jspacker 2 <http://dean.edwards.name/packer/>`_,
     as ported by Florian Schulze.
     """
-
     # TODO: This could support options.
 
     name = 'jspacker'
 
     def output(self, _in, out, **kw):
-        out.write(JavaScriptPacker().pack(_in.read(), compaction=False, encoding=62, fastDecode=True))
+        out.write(JavaScriptPacker().pack(_in.read(),
+                                          compaction=False,
+                                          encoding=62,
+                                          fastDecode=True))

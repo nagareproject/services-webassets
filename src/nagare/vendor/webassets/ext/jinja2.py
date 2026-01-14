@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import warnings
 import jinja2
 from jinja2.ext import Extension
@@ -9,10 +7,7 @@ from webassets.loaders import GlobLoader, LoaderError
 from webassets.exceptions import ImminentDeprecationWarning
 
 
-__all__ = (
-    'assets',
-    'Jinja2Loader',
-)
+__all__ = ('assets', 'Jinja2Loader',)
 
 
 class AssetsExtension(Extension):
@@ -27,7 +22,7 @@ class AssetsExtension(Extension):
 
     tags = set(['assets'])
 
-    BundleClass = Bundle  # Helpful for mocking during tests.
+    BundleClass = Bundle   # Helpful for mocking during tests.
 
     def __init__(self, environment):
         super(AssetsExtension, self).__init__(environment)
@@ -62,13 +57,11 @@ class AssetsExtension(Extension):
                     filters = value
                 elif name == 'filter':
                     filters = value
-                    warnings.warn(
-                        'The "filter" option of the {%% assets %%} '
-                        'template tag has been renamed to '
-                        '"filters" for consistency reasons '
-                        '(line %s).' % lineno,
-                        ImminentDeprecationWarning,
-                    )
+                    warnings.warn('The "filter" option of the {%% assets %%} '
+                                  'template tag has been renamed to '
+                                  '"filters" for consistency reasons '
+                                  '(line %s).' % lineno,
+                                    ImminentDeprecationWarning)
                 elif name == 'output':
                     output = value
                 elif name == 'debug':
@@ -146,16 +139,16 @@ class AssetsExtension(Extension):
         # Interlope end.
         #
         # Summary: We have to be satisfied with a single EXTRA variable.
-        args = [nodes.Name('ASSET_URL', 'param'), nodes.Name('ASSET_SRI', 'param'), nodes.Name('EXTRA', 'param')]
+        args = [nodes.Name('ASSET_URL', 'param'),
+                nodes.Name('ASSET_SRI', 'param'),
+                nodes.Name('EXTRA', 'param')]
 
         # Return a ``CallBlock``, which means Jinja2 will call a Python method
         # of ours when the tag needs to be rendered. That method can then
         # render the template body.
         call = self.call_method(
             # Note: Changing the args here requires updating ``Jinja2Loader``
-            '_render_assets',
-            args=[filters, output, dbg, depends, nodes.List(files)],
-        )
+            '_render_assets', args=[filters, output, dbg, depends, nodes.List(files)])
         call_block = nodes.CallBlock(call, args, [], body)
         call_block.set_lineno(lineno)
         return call_block
@@ -174,11 +167,18 @@ class AssetsExtension(Extension):
     def _render_assets(self, filter, output, dbg, depends, files, caller=None):
         env = self.environment.assets_environment
         if env is None:
-            raise RuntimeError('No assets environment configured in ' + 'Jinja2 environment')
+            raise RuntimeError('No assets environment configured in '+
+                               'Jinja2 environment')
 
         # Construct a bundle with the given options
-        bundle_kwargs = {'output': output, 'filters': filter, 'debug': dbg, 'depends': depends}
-        bundle = self.BundleClass(*self.resolve_contents(files, env), **bundle_kwargs)
+        bundle_kwargs = {
+            'output': output,
+            'filters': filter,
+            'debug': dbg,
+            'depends': depends
+        }
+        bundle = self.BundleClass(
+            *self.resolve_contents(files, env), **bundle_kwargs)
 
         # Retrieve urls (this may or may not cause a build)
         with bundle.bind(env):
@@ -225,34 +225,29 @@ class Jinja2Loader(GlobLoader):
             try:
                 t = env.parse(contents.decode(self.charset))
             except jinja2.exceptions.TemplateSyntaxError as e:
-                # print ('jinja parser (env %d) failed: %s'% (i, e))
+                #print ('jinja parser (env %d) failed: %s'% (i, e))
                 pass
             else:
                 result = []
-
                 def _recurse_node(node_to_search):
                     for node in node_to_search.iter_child_nodes():
                         if isinstance(node, jinja2.nodes.Call):
-                            if (
-                                isinstance(node.node, jinja2.nodes.ExtensionAttribute)
-                                and node.node.identifier == AssetsExtension.identifier
-                            ):
+                            if isinstance(node.node, jinja2.nodes.ExtensionAttribute)\
+                               and node.node.identifier == AssetsExtension.identifier:
                                 filter, output, dbg, depends, files = node.args
                                 bundle = Bundle(
                                     *AssetsExtension.resolve_contents(files.as_const(), self.asset_env),
                                     **{
                                         'output': output.as_const(),
                                         'depends': depends.as_const(),
-                                        'filters': filter.as_const(),
-                                    },
-                                )
+                                        'filters': filter.as_const()})
                                 result.append(bundle)
                         else:
                             _recurse_node(node)
-
                 for node in t.iter_child_nodes():
                     _recurse_node(node)
                 return result
         else:
-            raise LoaderError('Jinja parser failed on %s, tried %d environments' % (filename, len(self.jinja2_envs)))
+            raise LoaderError('Jinja parser failed on %s, tried %d environments' % (
+                filename, len(self.jinja2_envs)))
         return False

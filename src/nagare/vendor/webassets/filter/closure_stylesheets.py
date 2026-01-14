@@ -18,10 +18,12 @@ __all__ = ['ClosureStylesheetsCompiler', 'ClosureStylesheetsMinifier']
 
 
 class ClosureStylesheetsBase(JavaTool):
+
     def setup(self):
         super(ClosureStylesheetsBase, self).setup()
         try:
-            self.jar = self.get_config('CLOSURE_STYLESHEETS_PATH', what='Google Closure Stylesheets tool')
+            self.jar = self.get_config('CLOSURE_STYLESHEETS_PATH',
+                    what='Google Closure Stylesheets tool')
         except EnvironmentError:
             raise EnvironmentError(
                 "\nGoogle Closure Stylesheets jar can't be found."
@@ -34,7 +36,8 @@ class ClosureStylesheetsBase(JavaTool):
         params = []
         if self.mode != 'minify':
             params.append('--pretty-print')
-        self.subprocess(params + ['{input}'], out, _in)
+        self.subprocess(
+            params + ['{input}'], out, _in)
 
 
 class ClosureStylesheetsCompiler(ClosureStylesheetsBase):

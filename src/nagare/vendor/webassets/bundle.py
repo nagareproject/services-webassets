@@ -1,21 +1,10 @@
 from contextlib import contextmanager
 import os
 from os import path
-from webassets import six
-from webassets.six.moves import map
-from webassets.six.moves import zip
 
 from .filter import get_filter
-from .merge import (
-    FileHunk,
-    UrlHunk,
-    FilterTool,
-    merge,
-    merge_filters,
-    select_filters,
-    MoreThanOneFilterError,
-    NoFilters,
-)
+from .merge import (FileHunk, UrlHunk, FilterTool, merge, merge_filters,
+                    select_filters, MoreThanOneFilterError, NoFilters)
 from .updater import SKIP_CACHE
 from .exceptions import BundleError, BuildError
 from .utils import cmp_debug_levels, hash_func
@@ -23,7 +12,7 @@ from .env import ConfigurationContext, DictConfigStorage, BaseEnvironment
 from .utils import is_url, calculate_sri_on_file
 
 
-__all__ = ('Bundle', 'get_all_bundle_files')
+__all__ = ('Bundle', 'get_all_bundle_files',)
 
 
 def has_placeholder(s):
@@ -90,7 +79,6 @@ class BundleConfig(DictConfigStorage, ConfigurationContext):
     """A configuration dict that also supports Environment-like attribute
     access, i.e. ``config['resolver']`` and ``config.resolver``.
     """
-
     def __init__(self, bundle):
         DictConfigStorage.__init__(self, bundle)
         ConfigurationContext.__init__(self, self)
@@ -136,7 +124,8 @@ class Bundle(object):
                 self._config['debug'] = debug
 
         if options:
-            raise TypeError("got unexpected keyword argument '%s'" % list(options.keys())[0])
+            raise TypeError("got unexpected keyword argument '%s'" %
+                            list(options.keys())[0])
 
     def __repr__(self):
         return "<%s output=%s, filters=%s, contents=%s>" % (
@@ -154,15 +143,12 @@ class Bundle(object):
 
     def _get_debug(self):
         return self.config.get('debug', None)
-
     def _set_debug(self, value):
         self.config['debug'] = value
-
     debug = property(_get_debug, _set_debug)
 
     def _get_filters(self):
         return self._filters
-
     def _set_filters(self, value):
         """Filters may be specified in a variety of different ways, including
         by giving their name; we need to make sure we resolve everything to an
@@ -172,27 +158,21 @@ class Bundle(object):
             self._filters = ()
             return
 
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             # 333: Simplify w/o condition?
-            if six.PY3:
-                filters = map(str.strip, value.split(','))
-            else:
-                filters = map(unicode.strip, unicode(value).split(','))
+            filters = map(str.strip, value.split(','))
         elif isinstance(value, (list, tuple)):
             filters = value
         else:
             filters = [value]
         self._filters = [get_filter(f) for f in filters]
-
     filters = property(_get_filters, _set_filters)
 
     def _get_contents(self):
         return self._contents
-
     def _set_contents(self, value):
         self._contents = value
         self._resolved_contents = None
-
     contents = property(_get_contents, _set_contents)
 
     def _get_extra(self):
@@ -206,18 +186,12 @@ class Bundle(object):
             return result
         else:
             return self._extra
-
     def _set_extra(self, value):
         self._extra = value
-
-    extra = property(
-        _get_extra,
-        _set_extra,
-        doc="""A custom user dict of
+    extra = property(_get_extra, _set_extra, doc="""A custom user dict of
     extra values attached to this bundle. Those will be available in
     template tags, and can be used to attach things like a CSS
-    'media' value.""",
-    )
+    'media' value.""")
 
     def resolve_contents(self, ctx=None, force=False):
         """Return an actual list of source files.
@@ -295,19 +269,14 @@ class Bundle(object):
 
     def _get_depends(self):
         return self._depends
-
     def _set_depends(self, value):
-        self._depends = [value] if isinstance(value, six.string_types) else value
+        self._depends = [value] if isinstance(value, str) else value
         self._resolved_depends = None
-
-    depends = property(
-        _get_depends,
-        _set_depends,
-        doc="""Allows you to define an additional set of files (glob syntax
+    depends = property(_get_depends, _set_depends, doc=
+    """Allows you to define an additional set of files (glob syntax
     is supported), which are considered when determining whether a
     rebuild is required.
-    """,
-    )
+    """)
 
     def resolve_depends(self, ctx):
         # TODO: Caching is as problematic here as it is in resolve_contents().
@@ -345,7 +314,6 @@ class Bundle(object):
             # Often the versioner is able to help.
             if not version:
                 from .version import VersionIndeterminableError
-
                 if ctx.versions:
                     try:
                         version = ctx.versions.determine_version(self, ctx)
@@ -355,14 +323,10 @@ class Bundle(object):
                 else:
                     reason = '"versions" option not set'
             if not version:
-                raise BundleError(
-                    (
-                        'Cannot find version of %s. There is no manifest '
-                        'which knows the version, and it cannot be '
-                        'determined dynamically, because: %s'
-                    )
-                    % (self, reason)
-                )
+                raise BundleError((
+                    'Cannot find version of %s. There is no manifest '
+                    'which knows the version, and it cannot be '
+                    'determined dynamically, because: %s') % (self, reason))
             self.version = version
         return self.version
 
@@ -385,7 +349,10 @@ class Bundle(object):
         The hash therefore should be built upon data that actually affect the
         final build result.
         """
-        return hash_func((tuple(self.contents), self.output, tuple(self.filters), bool(self.debug)))
+        return hash_func((tuple(self.contents),
+                     self.output,
+                     tuple(self.filters),
+                     bool(self.debug)))
         # Note how self.depends is not included here. It could be, but we
         # really want this hash to only change for stuff that affects the
         # actual output bytes. Note that modifying depends will be effective
@@ -414,15 +381,13 @@ class Bundle(object):
         if self._env is None:
             raise BundleError('Bundle is not connected to an environment')
         return self._env
-
     def _set_env(self, env):
         self._env = env
-
     env = property(_get_env, _set_env)
 
-    def _merge_and_apply(
-        self, ctx, output, force, parent_debug=None, parent_filters=None, extra_filters=None, disable_cache=None
-    ):
+    def _merge_and_apply(self, ctx, output, force, parent_debug=None,
+                         parent_filters=None, extra_filters=None,
+                         disable_cache=None):
         """Internal recursive build method.
 
         ``parent_debug`` is the debug setting used by the parent bundle. This
@@ -458,7 +423,8 @@ class Bundle(object):
         # If not parent_debug is given (top level), use the Environment value.
         parent_debug = parent_debug if parent_debug is not None else ctx.debug
         # Consider bundle's debug attribute and other things.
-        current_debug_level = _effective_debug_level(ctx, self, extra_filters, default=parent_debug)
+        current_debug_level = _effective_debug_level(
+            ctx, self, extra_filters, default=parent_debug)
         # Special case: If we end up with ``True``, assume ``False`` instead.
         # The alternative would be for the build() method to refuse to work at
         # this point, which seems unnecessarily inconvenient (Instead how it
@@ -496,7 +462,8 @@ class Bundle(object):
         # not run in merge mode, and a child bundle that switches to
         # debug=False. The child bundle then DOES want to run those input
         # filters, so we do need to pass them.
-        filters_to_run = merge_filters(selected_filters, select_filters(parent_filters, current_debug_level))
+        filters_to_run = merge_filters(
+            selected_filters, select_filters(parent_filters, current_debug_level))
         filters_to_pass_down = merge_filters(filters, parent_filters)
 
         # Prepare contents
@@ -518,8 +485,9 @@ class Bundle(object):
         actually_skip_cache_here = disable_cache or bool(self.resolve_depends(ctx))
 
         filtertool = FilterTool(
-            ctx.cache, no_cache_read=actually_skip_cache_here, kwargs={'output': output[0], 'output_path': output[1]}
-        )
+            ctx.cache, no_cache_read=actually_skip_cache_here,
+            kwargs={'output': output[0],
+                    'output_path': output[1]})
 
         # Apply input()/open() filters to all the contents.
         hunks = []
@@ -527,13 +495,8 @@ class Bundle(object):
             if isinstance(cnt, Bundle):
                 # Recursively process nested bundles.
                 hunk = cnt._merge_and_apply(
-                    wrap(ctx, cnt),
-                    output,
-                    force,
-                    current_debug_level,
-                    filters_to_pass_down,
-                    disable_cache=disable_cache,
-                )
+                    wrap(ctx, cnt), output, force, current_debug_level,
+                    filters_to_pass_down, disable_cache=disable_cache)
                 if hunk is not None:
                     hunks.append((hunk, {}))
 
@@ -541,9 +504,7 @@ class Bundle(object):
                 # Give a filter the chance to open his file.
                 try:
                     hunk = filtertool.apply_func(
-                        filters_to_run,
-                        'open',
-                        [cnt],
+                        filters_to_run, 'open', [cnt],
                         # Also pass along the original relative path, as
                         # specified by the user, before resolving.
                         kwargs={'source': item},
@@ -556,8 +517,7 @@ class Bundle(object):
                         # that reading and hashing some files unnecessarily
                         # very often is better than running filters
                         # unnecessarily occasionally.
-                        cache_key=[FileHunk(cnt)] if not is_url(cnt) else [],
-                    )
+                        cache_key=[FileHunk(cnt)] if not is_url(cnt) else [])
                 except MoreThanOneFilterError as e:
                     raise BuildError(e)
                 except NoFilters:
@@ -574,7 +534,8 @@ class Bundle(object):
                 item_data = {'source': item, 'source_path': cnt}
 
                 # Run input filters, unless open() told us not to.
-                hunk = filtertool.apply(hunk, filters_to_run, 'input', kwargs=item_data)
+                hunk = filtertool.apply(hunk, filters_to_run, 'input',
+                                            kwargs=item_data)
                 hunks.append((hunk, item_data))
 
         # If this bundle is empty (if it has nested bundles, they did
@@ -606,7 +567,8 @@ class Bundle(object):
         # being possibly configured with cache reads off).
         return filtertool.apply(final, selected_filters, 'output')
 
-    def _build(self, ctx, extra_filters=None, force=None, output=None, disable_cache=None):
+    def _build(self, ctx, extra_filters=None, force=None, output=None,
+               disable_cache=None):
         """Internal bundle build function.
 
         This actually tries to build this very bundle instance, as opposed to
@@ -634,11 +596,13 @@ class Bundle(object):
         # already exists and nothing has changed.
         if force:
             update_needed = True
-        elif not has_placeholder(self.output) and not path.exists(self.resolve_output(ctx, self.output)):
+        elif not has_placeholder(self.output) and \
+                not path.exists(self.resolve_output(ctx, self.output)):
             update_needed = True
         else:
-            update_needed = ctx.updater.needs_rebuild(self, ctx) if ctx.updater else True
-            if update_needed == SKIP_CACHE:
+            update_needed = ctx.updater.needs_rebuild(self, ctx) \
+                if ctx.updater else True
+            if update_needed==SKIP_CACHE:
                 disable_cache = True
 
         if not update_needed:
@@ -646,12 +610,8 @@ class Bundle(object):
             return FileHunk(self.resolve_output(ctx, self.output))
 
         hunk = self._merge_and_apply(
-            ctx,
-            [self.output, self.resolve_output(ctx, version='?')],
-            force,
-            disable_cache=disable_cache,
-            extra_filters=extra_filters,
-        )
+            ctx, [self.output, self.resolve_output(ctx, version='?')],
+            force, disable_cache=disable_cache, extra_filters=extra_filters)
         if hunk is None:
             raise BuildError('Nothing to build for %s, is empty' % self)
 
@@ -660,12 +620,10 @@ class Bundle(object):
             output.write(hunk.data())
         else:
             if has_placeholder(self.output) and not ctx.versions:
-                raise BuildError(
-                    (
-                        'You have not set the "versions" option, but %s '
-                        'uses a version placeholder in the output target' % self
-                    )
-                )
+                raise BuildError((
+                    'You have not set the "versions" option, but %s '
+                    'uses a version placeholder in the output target'
+                        % self))
 
             version = None
             if ctx.versions:
@@ -714,7 +672,9 @@ class Bundle(object):
         ctx = wrap(self.env, self)
         hunks = []
         for bundle, extra_filters, new_ctx in self.iterbuild(ctx):
-            hunks.append(bundle._build(new_ctx, extra_filters, force=force, output=output, disable_cache=disable_cache))
+            hunks.append(bundle._build(
+                new_ctx, extra_filters, force=force, output=output,
+                disable_cache=disable_cache))
         return hunks
 
     def iterbuild(self, ctx):
@@ -735,15 +695,20 @@ class Bundle(object):
         if self.is_container:
             for bundle, _ in self.resolve_contents(ctx):
                 if bundle.is_container:
-                    for child, child_filters, new_ctx in bundle.iterbuild(wrap(ctx, bundle)):
-                        yield (child, merge_filters(child_filters, self.filters), new_ctx)
+                    for child, child_filters, new_ctx in \
+                            bundle.iterbuild(wrap(ctx, bundle)):
+                        yield (
+                            child,
+                            merge_filters(child_filters, self.filters),
+                            new_ctx)
                 else:
                     yield bundle, self.filters, wrap(ctx, bundle)
         else:
             yield self, [], ctx
 
     def _make_output_url(self, ctx):
-        """Return the output url, modified for expire header handling."""
+        """Return the output url, modified for expire header handling.
+        """
 
         # Only query the version if we need to for performance
         version = None
@@ -757,7 +722,8 @@ class Bundle(object):
             url = url % {'version': version}
         url = ctx.resolver.resolve_output_to_url(ctx, url)
 
-        if ctx.url_expire or (ctx.url_expire is None and not has_placeholder(self.output)):
+        if ctx.url_expire or (
+                ctx.url_expire is None and not has_placeholder(self.output)):
             url = "%s?%s" % (url, version)
         return url
 
@@ -792,14 +758,11 @@ class Bundle(object):
             # up to date; otherwise, we just assume the file already exists.
             # (not wasting any IO ops)
             if ctx.auto_build:
-                self._build(ctx, extra_filters=extra_filters, force=False, *args, **kwargs)
+                self._build(ctx, extra_filters=extra_filters, force=False,
+                            *args, **kwargs)
             if calculate_sri:
-                return [
-                    {
-                        'uri': self._make_output_url(ctx),
-                        'sri': calculate_sri_on_file(ctx.resolver.resolve_output_to_path(ctx, self.output, self)),
-                    }
-                ]
+                return [{'uri': self._make_output_url(ctx),
+                         'sri': calculate_sri_on_file(ctx.resolver.resolve_output_to_path(ctx, self.output, self))}]
             else:
                 return [self._make_output_url(ctx)]
         else:
@@ -809,15 +772,12 @@ class Bundle(object):
             urls = []
             for org, cnt in self.resolve_contents(ctx):
                 if isinstance(cnt, Bundle):
-                    urls.extend(
-                        org._urls(
-                            wrap(ctx, cnt),
-                            merge_filters(extra_filters, self.filters),
-                            *args,
-                            calculate_sri=calculate_sri,
-                            **kwargs,
-                        )
-                    )
+                    urls.extend(org._urls(
+                        wrap(ctx, cnt),
+                        merge_filters(extra_filters, self.filters),
+                        *args,
+                        calculate_sri=calculate_sri,
+                        **kwargs))
                 elif is_url(cnt):
                     # Can't calculate SRI for non file
                     if calculate_sri:
@@ -878,7 +838,8 @@ def pull_external(ctx, filename):
     # but attach the base filename for readability.
     # The bit-shifting rids us of ugly leading - characters.
     hashed_filename = hash_func(filename)
-    rel_path = path.join('webassets-external', "%s_%s" % (hashed_filename, path.basename(filename)))
+    rel_path = path.join('webassets-external',
+        "%s_%s" % (hashed_filename, path.basename(filename)))
     full_path = path.join(ctx.directory, rel_path)
 
     # Copy the file if necessary
@@ -956,4 +917,5 @@ def _effective_debug_level(ctx, bundle, extra_filters=None, default=None):
     return default
 
 
-has_files = lambda bundle: any([c for c in bundle.contents if not isinstance(c, Bundle)])
+has_files = lambda bundle: \
+                any([c for c in bundle.contents if not isinstance(c, Bundle)])

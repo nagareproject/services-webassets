@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import logging
 import logging.handlers
 
@@ -20,7 +19,6 @@ class CSSUtils(Filter):
 
     def setup(self):
         import cssutils
-
         self.cssutils = cssutils
 
         # cssutils is unaware of many new CSS3 properties,

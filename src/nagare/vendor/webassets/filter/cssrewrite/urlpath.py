@@ -18,17 +18,20 @@
 # Scripts maintained at http://www.voidspace.org.uk/python/index.shtml
 # E-mail fuzzyman@voidspace.org.uk
 
-from __future__ import print_function
 import posixpath
 import os
-
 try:
     from urllib.request import url2pathname, pathname2url
 except ImportError:
     from urllib import url2pathname, pathname2url
 
-__all__ = ['nativejoin', 'pathjoin', 'relpathto', 'tslash', 'relpath']
-
+__all__ = [
+    'nativejoin',
+    'pathjoin',
+    'relpathto',
+    'tslash',
+    'relpath'
+    ]
 
 def pathjoin(base, *paths):
     """
@@ -45,7 +48,6 @@ def pathjoin(base, *paths):
     path = (base,) + paths
     return posixpath.normpath(posixpath.join(*path))
 
-
 def nativejoin(base, path):
     """
     Joins two paths - returning a native file path.
@@ -54,7 +56,6 @@ def nativejoin(base, path):
     return a file path in a (relatively) OS native way.
     """
     return url2pathname(pathjoin(base, path))
-
 
 def relpathto(thisdir, origin, dest):
     """
@@ -81,12 +82,12 @@ def relpathto(thisdir, origin, dest):
         orig_abs = orig_abs + '/'
     if dest.endswith('/') and not dest_abs.endswith('/'):
         dest_abs = dest_abs + '/'
-    #    print orig_abs, dest_abs
+#    print orig_abs, dest_abs
     #
     # if the first item is a filename, we want to get rid of it
     orig_list = orig_abs.split('/')[:-1]
     dest_list = dest_abs.split('/')
-    #    print orig_list, dest_list
+#    print orig_list, dest_list
 
     if orig_list[0] != dest_list[0]:
         # can't get here from there
@@ -115,7 +116,6 @@ def relpathto(thisdir, origin, dest):
         return dest_list[-1]
     else:
         return '/'.join(segments)
-
 
 def relpath(origin, dest):
     """Given two absolute paths, work out a path from origin to destination.
@@ -165,21 +165,21 @@ def relpath(origin, dest):
     else:
         return '/'.join(segments)
 
-
 def tslash(apath):
     """Add a trailing slash to a path if it needs one.
 
     Doesn't use os.sep because you end up jiggered on windoze - when you
     want separators for URLs.
     """
-    if apath and apath != '.' and not apath.endswith('/') and not apath.endswith('\\'):
+    if (apath and
+            apath != '.' and
+            not apath.endswith('/') and
+            not apath.endswith('\\')):
         return apath + '/'
     else:
         return apath
 
-
 ##############################################
-
 
 def testJoin():
     thelist = [
@@ -199,7 +199,6 @@ def testJoin():
         print(entry, '      ::        ', nativejoin(*entry))
         print('\n')
 
-
 def testRelpathto():
     thedir = '//toplevel/dirone/dirtwo/dirthree'
     thelist = [
@@ -211,10 +210,9 @@ def testRelpathto():
         ('../fish1/fish2/', 'sub1/sub2'),
         ('../../../fish1/fish2/', 'sub1/sub2/'),
         ('../../../fish1/fish2/', 'sub1/sub2/file1.html'),
-    ]
+   ]
     for orig, dest in thelist:
         print('(%s, %s)      : ' % (orig, dest), relpathto(thedir, orig, dest))
-
 
 def testRelpathto2():
     thedir = 'section3/'
@@ -224,7 +222,6 @@ def testRelpathto2():
     for orig, dest in thelist:
         answer = relpathto(thedir, orig, dest)
         print('(%s, %s)      : ' % (orig, dest), answer)
-
 
 def testRelpath():
     thelist = [

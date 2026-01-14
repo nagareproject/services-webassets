@@ -31,7 +31,7 @@ class CleanCSS(ExternalTool):
             args += ['--version']
             # out = b"MAJOR.MINOR.REVISION" // b"3.4.19" or b"4.0.0"
             out, err = Popen(args, stdout=PIPE).communicate()
-            self._cleancss_ver = int(out[: out.index(b'.')])
+            self._cleancss_ver = int(out[:out.index(b'.')])
         return self._cleancss_ver
 
     def output(self, _in, out, **kw):

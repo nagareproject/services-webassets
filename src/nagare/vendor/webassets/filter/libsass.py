@@ -6,9 +6,6 @@ This filter based on Jesús Jerez <jerezmoreno@gmail.com> code [1].
 [1] https://bitbucket.org/jhuss/webassets-libsass
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
-
 from webassets.filter import Filter
 
 
@@ -54,7 +51,6 @@ class LibSass(Filter):
         Bundle('style.scss', filters='libsass', output='style.css', depends='**/*.scss')
 
     """
-
     name = 'libsass'
     options = {
         'style': 'LIBSASS_STYLE',
@@ -64,7 +60,10 @@ class LibSass(Filter):
     max_debug_level = None
 
     def _apply_sass(self, _in, out):
-        args = dict(output_style=self.style, include_paths=(self.includes if self.includes else []))
+        args = dict(
+            output_style=self.style,
+            include_paths=(self.includes if self.includes else [])
+        )
 
         if self.as_output:
             args['string'] = _in.read()

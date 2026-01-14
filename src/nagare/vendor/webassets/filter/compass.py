@@ -32,7 +32,6 @@ import tempfile
 import shutil
 import subprocess
 from io import open
-from webassets import six
 
 from webassets.exceptions import FilterError
 from webassets.filter import Filter, option
@@ -46,21 +45,20 @@ class CompassConfig(dict):
 
     def to_string(self):
         def string_rep(val):
-            """Determine the correct string rep for the config file"""
+            """ Determine the correct string rep for the config file """
             if isinstance(val, bool):
                 # True -> true and False -> false
-                return six.text_type(val).lower()
-            elif isinstance(val, six.string_types) and val.startswith(':'):
+                return str(val).lower()
+            elif isinstance(val, str) and val.startswith(':'):
                 # ruby symbols, like :nested, used for "output_style"
-                return six.text_type(val)
+                return str(val)
             elif isinstance(val, dict):
                 # ruby hashes, for "sass_options" for example
-                return u'{%s}' % ', '.join("'%s' => '%s'" % i for i in val.items())
+                return '{%s}' % ', '.join("'%s' => '%s'" % i for i in val.items())
             elif isinstance(val, tuple):
                 val = list(val)
             # works fine with strings and lists
             return repr(val)
-
         return u'\n'.join(['%s = %s' % (k, string_rep(v)) for k, v in self.items()])
 
 
@@ -147,7 +145,9 @@ class Compass(Filter):
         # sourcemap are correct. This will be in the project folder,
         # and as such, while exteremly unlikely, this could interfere
         # with existing files and directories.
-        tempout_dir = path.normpath(path.join(path.dirname(kw['output_path']), '../'))
+        tempout_dir = path.normpath(
+            path.join(path.dirname(kw['output_path']), '../')
+        )
         tempout = tempfile.mkdtemp(dir=tempout_dir)
         # Temporarily move to "tempout", so .sass-cache will be created there
         old_wd = os.getcwd()
@@ -207,36 +207,26 @@ class Compass(Filter):
             command = [self.compass or 'compass', 'compile']
             for plugin in self.plugins or []:
                 command.extend(('--require', plugin))
-            command.extend(
-                [
-                    '--sass-dir',
-                    sassdir,
-                    '--css-dir',
-                    tempout,
-                    '--config',
-                    config_file,
-                    '--quiet',
-                    '--boring',
-                    source_path,
-                ]
-            )
-            proc = subprocess.Popen(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                # shell: necessary on windows to execute
-                # ruby files, but doesn't work on linux.
-                shell=(os.name == 'nt'),
-            )
+            command.extend(['--sass-dir', sassdir,
+                            '--css-dir', tempout,
+                            '--config', config_file,
+                            '--quiet',
+                            '--boring',
+                            source_path])
+            proc = subprocess.Popen(command,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    # shell: necessary on windows to execute
+                                    # ruby files, but doesn't work on linux.
+                                    shell=(os.name == 'nt'))
             stdout, stderr = proc.communicate()
 
             # compass seems to always write a utf8 header? to stderr, so
             # make sure to not fail just because there's something there.
             if proc.returncode != 0:
-                raise FilterError(
-                    ('compass: subprocess had error: stderr=%s, ' + 'stdout=%s, returncode=%s')
-                    % (stderr, stdout, proc.returncode)
-                )
+                raise FilterError(('compass: subprocess had error: stderr=%s, '+
+                                   'stdout=%s, returncode=%s') % (
+                                                stderr, stdout, proc.returncode))
 
             guessed_outputfilename = path.splitext(path.basename(source_path))[0]
             guessed_outputfilepath = path.join(tempout, guessed_outputfilename)
@@ -244,7 +234,8 @@ class Compass(Filter):
             if config.get('sourcemap'):
                 sourcemap_file = open("%s.css.map" % guessed_outputfilepath)
                 sourcemap_output_filepath = path.join(
-                    path.dirname(kw['output_path']), path.basename(sourcemap_file.name)
+                    path.dirname(kw['output_path']),
+                    path.basename(sourcemap_file.name)
                 )
                 if not path.exists(path.dirname(sourcemap_output_filepath)):
                     os.mkdir(path.dirname(sourcemap_output_filepath))

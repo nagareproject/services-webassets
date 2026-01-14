@@ -30,7 +30,6 @@ CLOSURE_EXTRA_ARGS
         ['--output_wrapper', 'foo: %output%']
 """
 
-from __future__ import absolute_import
 from webassets.filter import JavaTool
 
 
@@ -46,15 +45,17 @@ class ClosureJS(JavaTool):
     }
 
     def setup(self):
-        super(ClosureJS, self).setup()
+        super().setup()
+        self.jar = self.get_jar()
 
+    def get_jar(self):
         try:
-            self.jar = self.get_config('CLOSURE_COMPRESSOR_PATH', what='Google Closure Compiler')
+            return self.get_config('CLOSURE_COMPRESSOR_PATH',
+                                   what='Google Closure Compiler')
         except EnvironmentError:
             try:
                 import closure
-
-                self.jar = closure.get_jar_filename()
+                return closure.get_jar_filename()
             except ImportError:
                 raise EnvironmentError(
                     "\nClosure Compiler jar can't be found."
@@ -66,7 +67,8 @@ class ClosureJS(JavaTool):
                 )
 
     def output(self, _in, out, **kw):
-        args = ['--charset', 'UTF-8', '--compilation_level', self.opt or 'WHITESPACE_ONLY']
+        args = ['--charset', 'UTF-8',
+                '--compilation_level', self.opt or 'WHITESPACE_ONLY']
         if self.extra_args:
             args.extend(self.extra_args)
         self.subprocess(args, out, _in)

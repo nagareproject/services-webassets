@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import os
 
 from webassets.filter import ExternalTool
@@ -95,7 +93,7 @@ class Less(ExternalTool):
         'line_numbers': 'LESS_LINE_NUMBERS',
         'extra_args': 'LESS_EXTRA_ARGS',
         'paths': 'LESS_PATHS',
-        'as_output': 'LESS_AS_OUTPUT',
+        'as_output': 'LESS_AS_OUTPUT'
     }
     max_debug_level = None
 
@@ -115,7 +113,10 @@ class Less(ExternalTool):
             args.append('--line-numbers=%s' % self.line_numbers)
 
         if self.paths:
-            paths = [path if os.path.isabs(path) else self.resolve_source(path) for path in self.paths]
+            paths = [
+                path if os.path.isabs(path) else self.resolve_source(path)
+                for path in self.paths
+            ]
             args.append('--include-path={0}'.format(os.pathsep.join(paths)))
 
         if self.extra_args:

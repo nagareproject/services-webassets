@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from webassets.filter import Filter
 
 
@@ -15,7 +14,6 @@ class CSSPrefixer(Filter):
 
     def setup(self):
         import cssprefixer
-
         self.cssprefixer = cssprefixer
 
     def output(self, _in, out, **kw):

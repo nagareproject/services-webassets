@@ -122,15 +122,17 @@ def _make_jsmin(python_only=False):
 
     charclass = r'(?:\[[^\\\]\r\n]*(?:\\[^\r\n][^\\\]\r\n]*)*\])'
     nospecial = r'[^/\\\[\r\n]'
-    regex = r'(?:/(?![\r\n/*])%s*(?:(?:\\[^\r\n]|%s)%s*)*/)' % (nospecial, charclass, nospecial)
+    regex = r'(?:/(?![\r\n/*])%s*(?:(?:\\[^\r\n]|%s)%s*)*/)' % (
+        nospecial, charclass, nospecial
+    )
     space = r'(?:%s|%s)' % (space_chars, space_comment)
     newline = r'(?:%s?[\r\n])' % line_comment
 
     def fix_charclass(result):
-        """Fixup string of chars to fit into a regex char class"""
+        """ Fixup string of chars to fit into a regex char class """
         pos = result.find('-')
         if pos >= 0:
-            result = r'%s%s-' % (result[:pos], result[pos + 1 :])
+            result = r'%s%s-' % (result[:pos], result[pos + 1:])
 
         def sequentize(string):
             """
@@ -149,29 +151,36 @@ def _make_jsmin(python_only=False):
                     first = last = char
             if last is not None:
                 result.append((first, last))
-            return ''.join(
-                [
-                    '%s%s%s' % (chr(first), last > first + 1 and '-' or '', last != first and chr(last) or '')
-                    for first, last in result
-                ]
-            )  # noqa
+            return ''.join(['%s%s%s' % (
+                chr(first),
+                last > first + 1 and '-' or '',
+                last != first and chr(last) or ''
+            ) for first, last in result])  # noqa
 
         return _re.sub(
             r"([\000-\040'`])",  # ' and ` for better portability
-            lambda m: '\\%03o' % ord(m.group(1)),
-            (sequentize(result).replace('\\', '\\\\').replace('[', '\\[').replace(']', '\\]')),
+            lambda m: '\\%03o' % ord(m.group(1)), (
+                sequentize(result)
+                .replace('\\', '\\\\')
+                .replace('[', '\\[')
+                .replace(']', '\\]')
+            )
         )
 
     def id_literal_(what):
-        """Make id_literal like char class"""
+        """ Make id_literal like char class """
         match = _re.compile(what).match
-        result = ''.join([chr(c) for c in xrange(127) if not match(chr(c))])
+        result = ''.join([
+            chr(c) for c in xrange(127) if not match(chr(c))
+        ])
         return '[^%s]' % fix_charclass(result)
 
     def not_id_literal_(keep):
-        """Make negated id_literal like char class"""
+        """ Make negated id_literal like char class """
         match = _re.compile(id_literal_(keep)).match
-        result = ''.join([chr(c) for c in xrange(127) if not match(chr(c))])
+        result = ''.join([
+            chr(c) for c in xrange(127) if not match(chr(c))
+        ])
         return r'[%s]' % fix_charclass(result)
 
     not_id_literal = not_id_literal_(r'[a-zA-Z0-9_$]')
@@ -185,37 +194,35 @@ def _make_jsmin(python_only=False):
 
     dull = r'[^\047"\140/\000-\040]'
 
-    space_sub_simple = _re.compile(
-        (
-            # noqa pylint: disable = bad-continuation
-            r'(%(dull)s+)'  # 0
-            r'|(%(strings)s%(dull)s*)'  # 1
-            r'|(?<=%(preregex1)s)'
+    space_sub_simple = _re.compile((
+        # noqa pylint: disable = bad-continuation
+
+        r'(%(dull)s+)'                                         # 0
+        r'|(%(strings)s%(dull)s*)'                             # 1
+        r'|(?<=%(preregex1)s)'
             r'%(space)s*(?:%(newline)s%(space)s*)*'
-            r'(%(regex)s)'  # 2
-            r'(%(space)s*(?:%(newline)s%(space)s*)+'  # 3
-            r'(?=%(post_regex_off)s))?'
-            r'|(?<=%(preregex2)s)'
-            r'%(space)s*(?:(%(newline)s)%(space)s*)*'  # 4
-            r'(%(regex)s)'  # 5
-            r'(%(space)s*(?:%(newline)s%(space)s*)+'  # 6
-            r'(?=%(post_regex_off)s))?'
-            r'|(?<=%(id_literal_close)s)'
-            r'%(space)s*(?:(%(newline)s)%(space)s*)+'  # 7
+            r'(%(regex)s)'                                     # 2
+            r'(%(space)s*(?:%(newline)s%(space)s*)+'           # 3
+                r'(?=%(post_regex_off)s))?'
+        r'|(?<=%(preregex2)s)'
+            r'%(space)s*(?:(%(newline)s)%(space)s*)*'          # 4
+            r'(%(regex)s)'                                     # 5
+            r'(%(space)s*(?:%(newline)s%(space)s*)+'           # 6
+                r'(?=%(post_regex_off)s))?'
+        r'|(?<=%(id_literal_close)s)'
+            r'%(space)s*(?:(%(newline)s)%(space)s*)+'          # 7
             r'(?=%(id_literal_open)s)'
-            r'|(?<=%(id_literal)s)(%(space)s)+(?=%(id_literal)s)'  # 8
-            r'|(?<=\+)(%(space)s)+(?=\+)'  # 9
-            r'|(?<=-)(%(space)s)+(?=-)'  # 10
-            r'|%(space)s+'
-            r'|(?:%(newline)s%(space)s*)+'
-        )
-        % locals()
-    ).sub
+        r'|(?<=%(id_literal)s)(%(space)s)+(?=%(id_literal)s)'  # 8
+        r'|(?<=\+)(%(space)s)+(?=\+)'                          # 9
+        r'|(?<=-)(%(space)s)+(?=-)'                            # 10
+        r'|%(space)s+'
+        r'|(?:%(newline)s%(space)s*)+'
+    ) % locals()).sub
 
     # print(space_sub_simple.__self__.pattern)
 
     def space_subber_simple(match):
-        """Substitution callback"""
+        """ Substitution callback """
         # pylint: disable = too-many-return-statements
 
         groups = match.groups()
@@ -240,44 +247,43 @@ def _make_jsmin(python_only=False):
         else:
             return ''
 
-    space_sub_banged = _re.compile(
-        (
-            # noqa pylint: disable = bad-continuation
-            r'(%(dull)s+)'  # 0
-            r'|(%(strings)s%(dull)s*)'  # 1
-            r'|(?<=%(preregex1)s)'
-            r'(%(space)s*(?:%(newline)s%(space)s*)*)'  # 2
-            r'(%(regex)s)'  # 3
-            r'(%(space)s*(?:%(newline)s%(space)s*)+'  # 4
-            r'(?=%(post_regex_off)s))?'
-            r'|(?<=%(preregex2)s)'
-            r'(%(space)s*(?:(%(newline)s)%(space)s*)*)'  # 5, 6
-            r'(%(regex)s)'  # 7
-            r'(%(space)s*(?:%(newline)s%(space)s*)+'  # 8
-            r'(?=%(post_regex_off)s))?'
-            r'|(?<=%(id_literal_close)s)'
-            r'(%(space)s*(?:%(newline)s%(space)s*)+)'  # 9
+    space_sub_banged = _re.compile((
+        # noqa pylint: disable = bad-continuation
+
+        r'(%(dull)s+)'                                         # 0
+        r'|(%(strings)s%(dull)s*)'                             # 1
+        r'|(?<=%(preregex1)s)'
+            r'(%(space)s*(?:%(newline)s%(space)s*)*)'          # 2
+            r'(%(regex)s)'                                     # 3
+            r'(%(space)s*(?:%(newline)s%(space)s*)+'           # 4
+                r'(?=%(post_regex_off)s))?'
+        r'|(?<=%(preregex2)s)'
+            r'(%(space)s*(?:(%(newline)s)%(space)s*)*)'        # 5, 6
+            r'(%(regex)s)'                                     # 7
+            r'(%(space)s*(?:%(newline)s%(space)s*)+'           # 8
+                r'(?=%(post_regex_off)s))?'
+        r'|(?<=%(id_literal_close)s)'
+            r'(%(space)s*(?:%(newline)s%(space)s*)+)'          # 9
             r'(?=%(id_literal_open)s)'
-            r'|(?<=%(id_literal)s)(%(space)s+)(?=%(id_literal)s)'  # 10
-            r'|(?<=\+)(%(space)s+)(?=\+)'  # 11
-            r'|(?<=-)(%(space)s+)(?=-)'  # 12
-            r'|(%(space)s+)'  # 13
-            r'|((?:%(newline)s%(space)s*)+)'  # 14
-        )
-        % locals()
-    ).sub
+        r'|(?<=%(id_literal)s)(%(space)s+)(?=%(id_literal)s)'  # 10
+        r'|(?<=\+)(%(space)s+)(?=\+)'                          # 11
+        r'|(?<=-)(%(space)s+)(?=-)'                            # 12
+        r'|(%(space)s+)'                                       # 13
+        r'|((?:%(newline)s%(space)s*)+)'                       # 14
+    ) % locals()).sub
 
     # print(space_sub_banged.__self__.pattern)
 
-    keep = _re.compile(
-        (r'%(space_chars)s+|%(space_comment_nobang)s+|%(newline)s+' r'|(%(bang_comment)s+)') % locals()
-    ).sub
+    keep = _re.compile((
+        r'%(space_chars)s+|%(space_comment_nobang)s+|%(newline)s+'
+        r'|(%(bang_comment)s+)'
+    ) % locals()).sub
     keeper = lambda m: m.groups()[0] or ''
 
     # print(keep.__self__.pattern)
 
     def space_subber_banged(match):
-        """Substitution callback"""
+        """ Substitution callback """
         # pylint: disable = too-many-return-statements
 
         groups = match.groups()
@@ -334,19 +340,20 @@ def _make_jsmin(python_only=False):
         # pylint: disable = redefined-outer-name
 
         is_bytes, script = _as_str(script)
-        script = (banged if keep_bang_comments else simple)('\n%s\n' % script).strip()
+        script = (banged if keep_bang_comments else simple)(
+            '\n%s\n' % script
+        ).strip()
         if is_bytes:
             return script.encode('latin-1')
         return script
 
     return jsmin
 
-
 jsmin = _make_jsmin()
 
 
 def _as_str(script):
-    """Make sure the script is a text string"""
+    """ Make sure the script is a text string """
     is_bytes = False
     if str is bytes:
         if not isinstance(script, basestring):  # noqa pylint: disable = undefined-variable
@@ -422,29 +429,24 @@ def jsmin_for_posers(script, keep_bang_comments=False):
         )
 
         def subber(match):
-            """Substitution callback"""
+            """ Substitution callback """
             groups = match.groups()
             return (
-                groups[0]
-                or groups[1]
-                or (groups[3] and (groups[2] + '\n'))
-                or groups[2]
-                or (
-                    groups[5]
-                    and "%s%s%s"
-                    % (
-                        groups[4] and '\n' or '',
-                        groups[5],
-                        groups[6] and '\n' or '',
-                    )
-                )
-                or (groups[7] and '\n')
-                or (groups[8] and ' ')
-                or (groups[9] and ' ')
-                or (groups[10] and ' ')
-                or ''
+                groups[0] or
+                groups[1] or
+                (groups[3] and (groups[2] + '\n')) or
+                groups[2] or
+                (groups[5] and "%s%s%s" % (
+                    groups[4] and '\n' or '',
+                    groups[5],
+                    groups[6] and '\n' or '',
+                )) or
+                (groups[7] and '\n') or
+                (groups[8] and ' ') or
+                (groups[9] and ' ') or
+                (groups[10] and ' ') or
+                ''
             )
-
     else:
         rex = (
             r'([^\047"\140/\000-\040]+)|((?:(?:\047[^\047\\\r\n]*(?:\\(?:[^'
@@ -490,37 +492,29 @@ def jsmin_for_posers(script, keep_bang_comments=False):
         keeper = lambda m: m.groups()[0] or ''
 
         def subber(match):
-            """Substitution callback"""
+            """ Substitution callback """
             groups = match.groups()
             return (
-                groups[0]
-                or groups[1]
-                or groups[3]
-                and "%s%s%s%s"
-                % (
+                groups[0] or
+                groups[1] or
+                groups[3] and "%s%s%s%s" % (
                     keep(keeper, groups[2]),
                     groups[3],
                     keep(keeper, groups[4] or ''),
                     groups[4] and '\n' or '',
-                )
-                or groups[7]
-                and "%s%s%s%s%s"
-                % (
+                ) or
+                groups[7] and "%s%s%s%s%s" % (
                     keep(keeper, groups[5]),
                     groups[6] and '\n' or '',
                     groups[7],
                     keep(keeper, groups[8] or ''),
                     groups[8] and '\n' or '',
-                )
-                or groups[9]
-                and (keep(keeper, groups[9]) + '\n')
-                or groups[10]
-                and (keep(keeper, groups[10]) or ' ')
-                or groups[11]
-                and (keep(keeper, groups[11]) or ' ')
-                or groups[12]
-                and (keep(keeper, groups[12]) or ' ')
-                or keep(keeper, groups[13] or groups[14])
+                ) or
+                groups[9] and (keep(keeper, groups[9]) + '\n') or
+                groups[10] and (keep(keeper, groups[10]) or ' ') or
+                groups[11] and (keep(keeper, groups[11]) or ' ') or
+                groups[12] and (keep(keeper, groups[12]) or ' ') or
+                keep(keeper, groups[13] or groups[14])
             )
 
     is_bytes, script = _as_str(script)
@@ -531,9 +525,8 @@ def jsmin_for_posers(script, keep_bang_comments=False):
 
 
 if __name__ == '__main__':
-
     def main():
-        """Main"""
+        """ Main """
         import sys as _sys
 
         argv = _sys.argv[1:]
@@ -543,6 +536,8 @@ if __name__ == '__main__':
         else:
             xjsmin = jsmin
 
-        _sys.stdout.write(xjsmin(_sys.stdin.read(), keep_bang_comments=keep_bang_comments))
+        _sys.stdout.write(xjsmin(
+            _sys.stdin.read(), keep_bang_comments=keep_bang_comments
+        ))
 
     main()

@@ -1,4 +1,5 @@
-__all__ = ('BundleError', 'BuildError', 'FilterError', 'EnvironmentError', 'ImminentDeprecationWarning')
+__all__ = ('BundleError', 'BuildError', 'FilterError',
+           'EnvironmentError', 'ImminentDeprecationWarning')
 
 
 class EnvironmentError(Exception):
@@ -28,5 +29,4 @@ class ImminentDeprecationWarning(Warning):
     Plus, we tend to remove rather quickly, so it's important devs
     get to see this.
     """
-
     pass

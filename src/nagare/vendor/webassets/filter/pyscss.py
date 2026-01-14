@@ -83,7 +83,6 @@ class PyScss(Filter):
         super(PyScss, self).setup()
 
         import scss
-
         self.scss = scss
 
         if self.style:
@@ -91,7 +90,8 @@ class PyScss(Filter):
                 from packaging.version import Version
             except ImportError:
                 from distutils.version import LooseVersion as Version
-            assert Version(scss.__version__) >= Version('1.2.0'), 'PYSCSS_STYLE only supported in pyScss>=1.2.0'
+            assert Version(scss.__version__) >= Version('1.2.0'), \
+                'PYSCSS_STYLE only supported in pyScss>=1.2.0'
 
         # Initialize various settings:
         # Why are these module-level, not instance-level ?!
@@ -110,12 +110,10 @@ class PyScss(Filter):
             scss.config.STATIC_ROOT = self.static_root or self.ctx.directory
             scss.config.STATIC_URL = self.static_url or self.ctx.url
         except EnvironmentError:
-            raise EnvironmentError(
-                'Because Environment.url and/or '
+            raise EnvironmentError('Because Environment.url and/or '
                 'Environment.directory are not set, you need to '
                 'provide values for the PYSCSS_STATIC_URL and/or '
-                'PYSCSS_STATIC_ROOT settings.'
-            )
+                'PYSCSS_STATIC_ROOT settings.')
 
         # This directory PyScss will use when generating new files,
         # like a spritemap. Maybe we should REQUIRE this to be set.
@@ -136,7 +134,8 @@ class PyScss(Filter):
         with working_directory(os.path.dirname(source_path)):
 
             scss_opts = {
-                'debug_info': (self.ctx.environment.debug if self.debug_info is None else self.debug_info),
+                'debug_info': (
+                    self.ctx.environment.debug if self.debug_info is None else self.debug_info),
             }
             if self.style:
                 scss_opts['style'] = self.style
@@ -147,8 +146,7 @@ class PyScss(Filter):
                 scss_opts=scss_opts,
                 # This is rather nice. We can pass along the filename,
                 # but also give it already preprocessed content.
-                scss_files={source_path: _in.read()},
-            )
+                scss_files={source_path: _in.read()})
 
             # Compile
             # Note: This will not throw an error when certain things

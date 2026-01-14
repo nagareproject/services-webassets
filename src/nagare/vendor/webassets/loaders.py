@@ -9,14 +9,11 @@ from os import path
 import glob, fnmatch
 import inspect
 import types
-from webassets import six
-
 try:
     import yaml
 except ImportError:
     pass
 
-from webassets import six
 from webassets import Environment
 from webassets.bundle import Bundle
 from webassets.exceptions import EnvironmentError
@@ -24,17 +21,14 @@ from webassets.filter import register_filter
 from webassets.importlib import import_module
 
 
-__all__ = (
-    'Loader',
-    'LoaderError',
-    'PythonLoader',
-    'YAMLLoader',
-    'GlobLoader',
-)
+__all__ = ('Loader', 'LoaderError', 'PythonLoader', 'YAMLLoader',
+           'GlobLoader',)
+
 
 
 class LoaderError(Exception):
-    """Loaders should raise this when they can't deal with a given file."""
+    """Loaders should raise this when they can't deal with a given file.
+    """
 
 
 class YAMLLoader(object):
@@ -57,8 +51,8 @@ class YAMLLoader(object):
         Each item yielded will be either a string representing a file path
         or a bundle."""
         contents = data.get('contents', [])
-        if isinstance(contents, six.string_types):
-            contents = (contents,)
+        if isinstance(contents, str):
+            contents = contents,
         for content in contents:
             if isinstance(content, dict):
                 content = self._get_bundle(content)
@@ -72,14 +66,13 @@ class YAMLLoader(object):
             debug=data.get('debug', None),
             extra=data.get('extra', {}),
             config=data.get('config', {}),
-            depends=data.get('depends', None),
-        )
+            depends=data.get('depends', None))
         return Bundle(*list(self._yield_bundle_contents(data)), **kwargs)
 
     def _get_bundles(self, obj, known_bundles=None):
         """Return a dict that keys bundle names to bundles."""
         bundles = {}
-        for key, data in six.iteritems(obj):
+        for key, data in obj.items():
             if data is None:
                 data = {}
             bundles[key] = self._get_bundle(data)
@@ -105,7 +98,7 @@ class YAMLLoader(object):
 
         The filename can be False if it is unknown.
         """
-        if isinstance(self.file_or_filename, six.string_types):
+        if isinstance(self.file_or_filename, str):
             return open(self.file_or_filename), self.file_or_filename
 
         file = self.file_or_filename
@@ -113,9 +106,8 @@ class YAMLLoader(object):
 
     @classmethod
     def _get_import_resolver(cls):
-        """method that can be overridden in tests"""
+        """ method that can be overridden in tests """
         from zope.dottedname.resolve import resolve as resolve_dotted
-
         return resolve_dotted
 
     def load_bundles(self, environment=None):
@@ -209,28 +201,20 @@ class YAMLLoader(object):
             env = Environment()
 
             # Load environment settings
-            for setting in (
-                'debug',
-                'cache',
-                'versions',
-                'url_expire',
-                'auto_build',
-                'url',
-                'directory',
-                'manifest',
-                'load_path',
-                'cache_file_mode',
-                # TODO: The deprecated values; remove at some point
-                'expire',
-                'updater',
-            ):
+            for setting in ('debug', 'cache', 'versions', 'url_expire',
+                            'auto_build', 'url', 'directory', 'manifest', 'load_path',
+                            'cache_file_mode',
+                            # TODO: The deprecated values; remove at some point
+                            'expire', 'updater'):
                 if setting in obj:
                     setattr(env, setting, obj[setting])
 
             # Treat the 'directory' option special, make it relative to the
             # path of the YAML file, if we know it.
             if filename and 'directory' in env.config:
-                env.directory = path.normpath(path.join(path.dirname(filename), env.config['directory']))
+                env.directory = path.normpath(
+                    path.join(path.dirname(filename),
+                              env.config['directory']))
 
             # Treat the 'filters' option special, it should resolve the
             # entries as classes and register them to the environment
@@ -240,8 +224,7 @@ class YAMLLoader(object):
                 except ImportError:
                     raise EnvironmentError(
                         "In order to use custom filters in the YAMLLoader "
-                        "you must install the zope.dottedname package"
-                    )
+                        "you must install the zope.dottedname package")
                 for filter_class in obj['filters']:
                     try:
                         cls = resolve_dotted(filter_class)
@@ -250,7 +233,8 @@ class YAMLLoader(object):
                     if inspect.isclass(cls):
                         register_filter(cls)
                     else:
-                        raise LoaderError("Custom filters must be classes " "not modules or functions")
+                        raise LoaderError("Custom filters must be classes "
+                            "not modules or functions")
 
             # Load custom config options
             if 'config' in obj:
@@ -258,7 +242,7 @@ class YAMLLoader(object):
 
             # Load bundles
             bundles = self._get_bundles(obj.get('bundles', {}))
-            for name, bundle in six.iteritems(bundles):
+            for name, bundle in bundles.items():
                 env.register(name, bundle)
 
             return env
@@ -338,7 +322,8 @@ class GlobLoader(object):
             return iter(glob.glob(f))
 
     def with_file(self, filename, then_run):
-        """Call ``then_run`` with the file contents."""
+        """Call ``then_run`` with the file contents.
+        """
         file = open(filename, 'rb')
         try:
             contents = file.read()

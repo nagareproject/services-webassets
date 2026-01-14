@@ -49,7 +49,6 @@ class Babel(ExternalTool):
     BABEL_RUN_IN_DEBUG
         May be set to False to make babel not run in debug
     """
-
     name = 'babel'
     max_debug_level = None
 
@@ -75,3 +74,4 @@ class Babel(ExternalTool):
         if 'source_path' in kw:
             args.extend(['--filename', kw['source_path']])
         return self.subprocess(args, out, _in)
+

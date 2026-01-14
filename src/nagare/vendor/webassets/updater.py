@@ -26,19 +26,12 @@ the cache is a superior solution for getting essentially the same speed
 increase as using the hash to reliably determine which bundles to skip.
 """
 
-from webassets import six
-from webassets.six.moves import map
-from webassets.six.moves import zip
 from webassets.exceptions import BundleError, BuildError
 from webassets.utils import RegistryMetaclass, is_url, hash_func
 
 
-__all__ = (
-    'get_updater',
-    'SKIP_CACHE',
-    'TimestampUpdater',
-    'AlwaysUpdater',
-)
+__all__ = ('get_updater', 'SKIP_CACHE',
+           'TimestampUpdater', 'AlwaysUpdater',)
 
 
 SKIP_CACHE = object()
@@ -52,11 +45,9 @@ enough to make this decision by itself.
 """
 
 
-class BaseUpdater(
-    six.with_metaclass(
-        RegistryMetaclass(clazz=lambda: BaseUpdater, attribute='needs_rebuild', desc='an updater implementation')
-    )
-):
+class BaseUpdater(metaclass=RegistryMetaclass(
+    clazz=lambda: BaseUpdater, attribute='needs_rebuild',
+    desc='an updater implementation')):
     """Base updater class.
 
     Child classes that define an ``id`` attribute are accessible via their
@@ -72,7 +63,8 @@ class BaseUpdater(
         raise NotImplementedError()
 
     def build_done(self, bundle, ctx):
-        """This will be called once a bundle has been successfully built."""
+        """This will be called once a bundle has been successfully built.
+        """
 
 
 get_updater = BaseUpdater.resolve
@@ -135,14 +127,11 @@ class TimestampUpdater(BundleDefUpdater):
                 # because otherwise, this updater would always return True,
                 # and thus not do its job at all.
                 if ctx.manifest is None:
-                    raise BuildError(
-                        (
-                            '%s uses a version placeholder, and you are '
-                            'using "%s" versions. To use automatic '
-                            'building in this configuration, you need to '
-                            'define a manifest.' % (bundle, ctx.versions)
-                        )
-                    )
+                    raise BuildError((
+                        '%s uses a version placeholder, and you are '
+                        'using "%s" versions. To use automatic '
+                        'building in this configuration, you need to '
+                        'define a manifest.' % (bundle, ctx.versions)))
                 return True
 
             try:
@@ -151,14 +140,13 @@ class TimestampUpdater(BundleDefUpdater):
                 # If the output file does not exist, we'll have to rebuild
                 return True
 
-        # Recurse through the bundle hierarchy. Check the timestamp of all
+       # Recurse through the bundle hierarchy. Check the timestamp of all
         # the bundle source files, as well as any additional
         # dependencies that we are supposed to watch.
         from webassets.bundle import wrap
-
         for iterator, result in (
             (lambda e: map(lambda s: s[1], bundle.resolve_contents(e)), True),
-            (bundle.resolve_depends, SKIP_CACHE),
+            (bundle.resolve_depends, SKIP_CACHE)
         ):
             for item in iterator(ctx):
                 if isinstance(item, Bundle):
@@ -178,7 +166,9 @@ class TimestampUpdater(BundleDefUpdater):
         return False
 
     def needs_rebuild(self, bundle, ctx):
-        return super(TimestampUpdater, self).needs_rebuild(bundle, ctx) or self.check_timestamps(bundle, ctx)
+        return \
+            super(TimestampUpdater, self).needs_rebuild(bundle, ctx) or \
+            self.check_timestamps(bundle, ctx)
 
     def build_done(self, bundle, ctx):
         # Reset the resolved dependencies, so any globs will be
@@ -196,3 +186,4 @@ class AlwaysUpdater(BaseUpdater):
 
     def needs_rebuild(self, bundle, ctx):
         return True
+

@@ -1,19 +1,22 @@
 import re
-from webassets.filter import Filter, register_filter
+from webassets.filter import (
+    Filter,
+    register_filter
+)
 
 
 class ReplaceFilter(Filter):
     r"""
-    A filter that allows arbitrary search/replace of strings using a source
-    regex and a replacement string. Unlike cssrewrite this works on strings
-    which are not paths and can be used as an output filter.
+        A filter that allows arbitrary search/replace of strings using a source
+        regex and a replacement string. Unlike cssrewrite this works on strings
+        which are not paths and can be used as an output filter.
 
-    Usage:
+        Usage:
 
-        replace_static_urls = ReplaceFilter(
-            pattern=r'\s*{{\s*STATIC_URL\s*}}\s*',
-            repl=settings.STATIC_URL,
-        )
+            replace_static_urls = ReplaceFilter(
+                pattern=r'\\s*{{\\s*STATIC_URL\\s*}}\\s*',
+                repl=settings.STATIC_URL,
+            )
     """
 
     name = 'replace'
@@ -27,7 +30,7 @@ class ReplaceFilter(Filter):
         super(ReplaceFilter, self).__init__(**kwargs)
 
     def unique(self):
-        """Return a hashable representation of the parameters to allow different instances of this filter."""
+        """ Return a hashable representation of the parameters to allow different instances of this filter. """
         return self.pattern, self.repl
 
     def _process(self, _in, out, **kwargs):

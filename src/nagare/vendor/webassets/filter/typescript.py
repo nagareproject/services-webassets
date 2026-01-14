@@ -1,13 +1,14 @@
 import os
 import subprocess
 import tempfile
-from io import open  # Give 2 and 3 use same newline behaviour.
+from io import open   # Give 2 and 3 use same newline behaviour.
 
 from webassets.filter import Filter
 from webassets.exceptions import FilterError
 
 
 __all__ = ('TypeScript',)
+
 
 
 class TypeScript(Filter):
@@ -23,7 +24,10 @@ class TypeScript(Filter):
 
     name = 'typescript'
     max_debug_level = None
-    options = {'binary': 'TYPESCRIPT_BIN', 'config': 'TYPESCRIPT_CONFIG'}
+    options = {
+        'binary': 'TYPESCRIPT_BIN',
+        'config': 'TYPESCRIPT_CONFIG'
+    }
 
     def output(self, _in, out, **kw):
         # The typescript compiler cannot read a file which does not have
@@ -35,18 +39,19 @@ class TypeScript(Filter):
         with open(input_filename, 'w') as f:
             f.write(_in.read())
 
-        args = [self.binary or 'tsc', '--out', output_filename, input_filename]
+        args = [self.binary or 'tsc', '--outFile', output_filename, input_filename]
         if self.config:
             args += self.config.split()
         proc = subprocess.Popen(
-            args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=(os.name == 'nt')
-        )
+            args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=(os.name == 'nt'))
         stdout, stderr = proc.communicate()
         if proc.returncode != 0:
-            raise FilterError(
-                "typescript: subprocess had error: stderr=%s," % stderr
-                + "stdout=%s, returncode=%s" % (stdout, proc.returncode)
-            )
+            raise FilterError("typescript: subprocess had error: stderr=%s," % stderr +
+                "stdout=%s, returncode=%s" % (stdout, proc.returncode))
 
         with open(output_filename, 'r') as f:
             out.write(f.read())

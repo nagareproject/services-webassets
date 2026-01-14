@@ -3,7 +3,6 @@ from os.path import join
 from webassets.utils import common_path_prefix
 from webassets.utils import urlparse
 from . import urlpath
-
 try:
     from collections import OrderedDict
 except ImportError:
@@ -70,7 +69,7 @@ class CSSRewrite(CSSUrlRewriter):
             replace_dict = OrderedDict()
             for repldir, sub in self.replace.items():
                 repldir = addsep(os.path.normpath(join(root, repldir)))
-                replurl = path2url(repldir[len(common_path_prefix([root, repldir])) :])
+                replurl = path2url(repldir[len(common_path_prefix([root, repldir])):])
                 replace_dict[replurl] = sub
             self.replace_dict = replace_dict
 
@@ -84,7 +83,7 @@ class CSSRewrite(CSSUrlRewriter):
             for to_replace, sub in self.replace_dict.items():
                 targeturl = urlparse.urljoin(self.source_url, url)
                 if targeturl.startswith(to_replace):
-                    url = "%s%s" % (sub, targeturl[len(to_replace) :])
+                    url = "%s%s" % (sub, targeturl[len(to_replace):])
                     # Only apply the first match
                     break
 

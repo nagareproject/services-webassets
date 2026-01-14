@@ -39,7 +39,9 @@ class Less(Filter):
     """
 
     name = 'less_ruby'
-    options = {'less': ('binary', 'LESS_RUBY_PATH')}
+    options = {
+        'less': ('binary', 'LESS_RUBY_PATH')
+    }
     max_debug_level = None
 
     def open(self, out, sourcePath, **kw):
@@ -52,7 +54,8 @@ class Less(Filter):
         http://groups.google.com/group/lesscss/browse_thread/thread/3aed033a44c51b4c/b713148afde87e81
         """
         # TODO: Use NamedTemporaryFile.
-        outtemp_name = os.path.join(tempfile.gettempdir(), 'assets_temp_%d.css' % int(time.time()))
+        outtemp_name = os.path.join(tempfile.gettempdir(),
+                                    'assets_temp_%d.css' % int(time.time()))
 
         proc = subprocess.Popen(
             [self.less or 'lessc', sourcePath, outtemp_name],
@@ -60,8 +63,7 @@ class Less(Filter):
             stderr=subprocess.PIPE,
             # shell: necessary on windows to execute
             # ruby files, but doesn't work on linux.
-            shell=(os.name == 'nt'),
-        )
+            shell=(os.name == 'nt'))
         stdout, stderr = proc.communicate()
 
         # less only writes to stdout, as noted in the method doc, but
@@ -69,10 +71,9 @@ class Less(Filter):
         if stdout or stderr or proc.returncode != 0:
             if os.path.exists(outtemp_name):
                 os.unlink(outtemp_name)
-            raise FilterError(
-                ('less: subprocess had error: stderr=%s, ' + 'stdout=%s, returncode=%s')
-                % (stderr, stdout, proc.returncode)
-            )
+            raise FilterError(('less: subprocess had error: stderr=%s, '+
+                               'stdout=%s, returncode=%s') % (
+                                            stderr, stdout, proc.returncode))
 
         outtemp = open(outtemp_name)
         try:

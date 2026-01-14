@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 from webassets.filter import ExternalTool
 from webassets.utils import working_directory
 
@@ -40,7 +38,6 @@ class PostCSS(ExternalTool):
         setting, which expects a list of strings.
 
     """
-
     name = 'postcss'
 
     options = {

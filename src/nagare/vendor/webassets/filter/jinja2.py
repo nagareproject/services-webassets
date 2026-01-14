@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from webassets.filter import Filter
 
 
@@ -23,7 +22,10 @@ class Jinja2(Filter):
 
     name = 'jinja2'
     max_debug_level = None
-    options = {'context': 'JINJA2_CONTEXT', 'jinja2_env': 'JINJA2_ENV'}
+    options = {
+        'context': 'JINJA2_CONTEXT',
+        'jinja2_env': 'JINJA2_ENV'
+    }
 
     def setup(self):
         try:

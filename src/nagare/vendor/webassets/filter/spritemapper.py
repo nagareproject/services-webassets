@@ -1,7 +1,5 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from webassets.six import StringIO
 from contextlib import contextmanager
+from io import StringIO
 from webassets.filter import Filter
 
 try:
@@ -70,7 +68,9 @@ class Spritemapper(Filter):
     def setup(self):
 
         if not spritecss_loaded:
-            raise EnvironmentError("The spritemapper package could not be found.")
+            raise EnvironmentError(
+                "The spritemapper package could not be found."
+            )
 
         self.options = {}
         padding = self.get_config('SPRITEMAPPER_PADDING', require=False)

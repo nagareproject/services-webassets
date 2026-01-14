@@ -44,7 +44,7 @@ class Handlebars(JSTemplateFilter):
     }
     max_debug_level = None
 
-    def process_templates(self, out, hunks, **kw):
+    def process_templates(self, out,  hunks, **kw):
         templates = [info['source_path'] for _, info in hunks]
 
         if self.root is True:
@@ -62,13 +62,14 @@ class Handlebars(JSTemplateFilter):
         args.extend(templates)
 
         proc = subprocess.Popen(
-            args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=(os.name == 'nt')
-        )
+            args, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=(os.name == 'nt'))
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
-            raise FilterError(
-                ('handlebars: subprocess had error: stderr=%s, ' + 'stdout=%s, returncode=%s')
-                % (stderr, stdout, proc.returncode)
-            )
+            raise FilterError(('handlebars: subprocess had error: stderr=%s, '+
+                               'stdout=%s, returncode=%s') % (
+                                    stderr, stdout, proc.returncode))
         out.write(stdout.decode('utf-8').strip() + ';')

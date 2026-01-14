@@ -43,7 +43,7 @@ class ClosureTemplateFilter(JSTemplateFilter):
         'extra_args': 'CLOSURE_EXTRA_ARGS',
     }
 
-    def process_templates(self, out, hunks, **kw):
+    def process_templates(self, out,  hunks, **kw):
         templates = [info['source_path'] for _, info in hunks]
 
         temp = tempfile.NamedTemporaryFile(dir='.', delete=True)
@@ -57,11 +57,11 @@ class ClosureTemplateFilter(JSTemplateFilter):
     def setup(self):
         super(ClosureTemplateFilter, self).setup()
         try:
-            self.jar = self.get_config('CLOSURE_TEMPLATES_PATH', what='Google Closure Soy Templates Compiler')
+            self.jar = self.get_config('CLOSURE_TEMPLATES_PATH',
+                    what='Google Closure Soy Templates Compiler')
         except EnvironmentError:
             try:
                 import closure_soy
-
                 self.jar = closure_soy.get_jar_filename()
             except ImportError:
                 raise EnvironmentError(
@@ -92,11 +92,9 @@ class ClosureTemplateFilter(JSTemplateFilter):
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            shell=(os.name == 'nt'),
-        )
+            shell=(os.name == 'nt'))
         stdout, stderr = proc.communicate()
         if proc.returncode:
-            raise FilterError(
-                '%s: subprocess returned a '
-                'non-success result code: %s, stdout=%s, stderr=%s' % (self.name, proc.returncode, stdout, stderr)
-            )
+            raise FilterError('%s: subprocess returned a '
+                'non-success result code: %s, stdout=%s, stderr=%s' % (
+                     self.name, proc.returncode, stdout, stderr))

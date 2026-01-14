@@ -1,63 +1,25 @@
-from webassets import six
+import base64
 import contextlib
+import hashlib
 import os
+import pickle
 import sys
 import re
+from io import StringIO
 from itertools import takewhile
+from urllib import parse as urlparse
 
 from .exceptions import BundleError
 
 
-__all__ = ('md5_constructor', 'pickle', 'set', 'StringIO', 'common_path_prefix', 'working_directory', 'is_url')
+__all__ = ('md5_constructor', 'pickle', 'set', 'StringIO',
+           'common_path_prefix', 'working_directory', 'is_url')
 
-
-import base64
-
-if sys.version_info >= (2, 5):
-    import hashlib
-
-    md5_constructor = hashlib.md5
-else:
-    import md5
-
-    md5_constructor = md5.new
-
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-
-try:
-    set
-except NameError:
-    from sets import Set as set
-else:
-    set = set
-
-
-try:
-    FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError
-else:
-    FileNotFoundError = FileNotFoundError
-
-
-from webassets.six import StringIO
-
-
-try:
-    from urllib import parse as urlparse
-except ImportError:  # Python 2
-    import urlparse
-    import urllib
-
+md5_constructor = hashlib.md5
+set = set
 
 def hash_func(data):
     from .cache import make_md5
-
     return make_md5(data)
 
 
@@ -72,9 +34,8 @@ def common_path_prefix(paths, sep=os.path.sep):
     This replacement is from:
         http://rosettacode.org/wiki/Find_Common_Directory_Path#Python
     """
-
     def allnamesequal(name):
-        return all(n == name[0] for n in name[1:])
+        return all(n==name[0] for n in name[1:])
 
     # The regex splits the paths on both / and \ characters, whereas the
     # rosettacode.org algorithm only uses os.path.sep
@@ -92,7 +53,7 @@ def working_directory(directory=None, filename=None):
     Instead of a ``directory``, you may also give a ``filename``, and the
     working directory will be set to the directory that file is in.s
     """
-    assert bool(directory) != bool(filename)  # xor
+    assert bool(directory) != bool(filename)   # xor
     if not directory:
         directory = os.path.dirname(filename)
     prev_cwd = os.getcwd()
@@ -103,7 +64,8 @@ def working_directory(directory=None, filename=None):
         os.chdir(prev_cwd)
 
 
-def make_option_resolver(clazz=None, attribute=None, classes=None, allow_none=True, desc=None):
+def make_option_resolver(clazz=None, attribute=None, classes=None,
+                         allow_none=True, desc=None):
     """Returns a function which can resolve an option to an object.
 
     The option may given as an instance or a class (of ``clazz``, or
@@ -152,7 +114,7 @@ def make_option_resolver(clazz=None, attribute=None, classes=None, allow_none=Tr
             return instantiate(option, env)
 
         # If it is a string
-        elif isinstance(option, six.string_types):
+        elif isinstance(option, str):
             parts = option.split(':', 1)
             key = parts[0]
             arg = parts[1] if len(parts) > 1 else None
@@ -160,7 +122,6 @@ def make_option_resolver(clazz=None, attribute=None, classes=None, allow_none=Tr
                 return instantiate(classes[key], env, *([arg] if arg else []))
 
         raise ValueError('%s cannot be resolved%s' % (option, desc_string))
-
     resolve_option.__doc__ = """Resolve ``option``%s.""" % desc_string
 
     return resolve_option
@@ -173,11 +134,10 @@ def RegistryMetaclass(clazz=None, attribute=None, allow_none=True, desc=None):
     The metaclass will also have a ``resolve`` method which can turn a string
     into an instance of one of the classes (based on ``make_option_resolver``).
     """
-
     def eq(self, other):
         """Return equality with config values that instantiate this."""
-        return (hasattr(self, 'id') and self.id == other) or id(self) == id(other)
-
+        return (hasattr(self, 'id') and self.id == other) or\
+               id(self) == id(other)
     def unicode(self):
         return "%s" % (self.id if hasattr(self, 'id') else repr(self))
 
@@ -196,10 +156,13 @@ def RegistryMetaclass(clazz=None, attribute=None, allow_none=True, desc=None):
                 mcs.REGISTRY[new_klass.id] = new_klass
             return new_klass
 
-        resolve = staticmethod(
-            make_option_resolver(clazz=clazz, attribute=attribute, allow_none=allow_none, desc=desc, classes=REGISTRY)
-        )
-
+        resolve = staticmethod(make_option_resolver(
+            clazz=clazz,
+            attribute=attribute,
+            allow_none=allow_none,
+            desc=desc,
+            classes=REGISTRY
+        ))
     return Metaclass
 
 

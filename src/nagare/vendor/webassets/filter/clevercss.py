@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from webassets.filter import Filter
 
 
@@ -18,7 +17,6 @@ class CleverCSS(Filter):
 
     def setup(self):
         import clevercss
-
         self.clevercss = clevercss
 
     def output(self, _in, out, **kw):

@@ -1,17 +1,17 @@
-from __future__ import print_function
 import shutil
 import os, sys
 import time
 import logging
+from io import StringIO
 
 from webassets.loaders import PythonLoader, YAMLLoader
-from webassets.bundle import get_all_bundle_files
+from webassets.bundle import get_all_bundle_files, Bundle
 from webassets.exceptions import BuildError
 from webassets.updater import TimestampUpdater
 from webassets.merge import MemoryHunk
 from webassets.version import get_manifest
 from webassets.cache import FilesystemCache
-from webassets.utils import set, StringIO
+
 
 __all__ = ('CommandError', 'CommandLineEnvironment', 'main')
 
@@ -44,7 +44,9 @@ class Command(object):
 
 
 class BuildCommand(Command):
-    def __call__(self, bundles=None, output=None, directory=None, no_cache=None, manifest=None, production=None):
+
+    def __call__(self, bundles=None, output=None, directory=None, no_cache=None,
+              manifest=None, production=None):
         """Build assets.
 
         ``bundles``
@@ -77,17 +79,16 @@ class BuildCommand(Command):
             If set to ``True``, then :attr:`Environment.debug`` will forcibly
             be disabled (set to ``False``) during the build.
         """
+
         # Validate arguments
         if bundles and output:
             raise CommandError(
-                'When specifying explicit output filenames you must ' 'do so for all bundles you want to build.'
-            )
+                'When specifying explicit output filenames you must '
+                'do so for all bundles you want to build.')
         if directory and output:
-            raise CommandError(
-                'A custom output directory cannot be '
-                'combined with explicit output filenames '
-                'for individual bundles.'
-            )
+            raise CommandError('A custom output directory cannot be '
+                               'combined with explicit output filenames '
+                               'for individual bundles.')
 
         if production:
             # TODO: Reset again (refactor commands to be classes)
@@ -102,8 +103,7 @@ class BuildCommand(Command):
                     # abspath() is important, or this will be considered
                     # relative to Environment.directory.
                     "file:%s" % os.path.abspath(manifest),
-                    env=self.environment,
-                )
+                    env=self.environment)
             self.environment.manifest = manifest
 
         # Use output as a dict.
@@ -114,19 +114,23 @@ class BuildCommand(Command):
         bundle_names = bundles if bundles else (output.keys() if output else [])
         for name in bundle_names:
             if not name in self.environment:
-                raise CommandError('I do not know a bundle name named "%s".' % name)
+                raise CommandError(
+                    'I do not know a bundle name named "%s".' % name)
 
         # Make a list of bundles to build, and the filename to write to.
         if bundle_names:
             # TODO: It's not ok to use an internal property here.
-            bundles = [(n, b) for n, b in self.environment._named_bundles.items() if n in bundle_names]
+            bundles = [(n,b) for n, b in self.environment._named_bundles.items()
+                             if n in bundle_names]
         else:
             # Includes unnamed bundles as well.
             bundles = [(None, b) for b in self.environment]
 
         # Determine common prefix for use with ``directory`` option.
         if directory:
-            prefix = os.path.commonprefix([os.path.normpath(b.resolve_output()) for _, b in bundles if b.output])
+            prefix = os.path.commonprefix(
+                [os.path.normpath(b.resolve_output())
+                 for _, b in bundles if b.output])
             # dirname() gives the right value for a single file.
             prefix = os.path.dirname(prefix)
 
@@ -136,22 +140,19 @@ class BuildCommand(Command):
             # is just in place of a less understandable error that would
             # otherwise occur.
             if bundle.is_container and directory:
-                raise CommandError('A custom output directory cannot currently be ' 'used with container bundles.')
+                raise CommandError(
+                    'A custom output directory cannot currently be '
+                    'used with container bundles.')
 
             # Determine which filename to use, if not the default.
             overwrite_filename = None
             if output:
                 overwrite_filename = output[name]
             elif directory:
-                offset = os.path.normpath(bundle.resolve_output())[len(prefix) + 1 :]
+                offset = os.path.normpath(
+                    bundle.resolve_output())[len(prefix)+1:]
                 overwrite_filename = os.path.join(directory, offset)
-            to_build.append(
-                (
-                    bundle,
-                    overwrite_filename,
-                    name,
-                )
-            )
+            to_build.append((bundle, overwrite_filename, name,))
 
         # Build.
         built = []
@@ -177,7 +178,8 @@ class BuildCommand(Command):
                     # anyway.
                     output = StringIO()
                     with bundle.bind(self.environment):
-                        bundle.build(force=True, output=output, disable_cache=no_cache)
+                        bundle.build(force=True, output=output,
+                            disable_cache=no_cache)
                     if directory:
                         # Only auto-create directories in this mode.
                         output_dir = os.path.dirname(overwrite_filename)
@@ -194,6 +196,7 @@ class BuildCommand(Command):
 
 
 class WatchCommand(Command):
+
     def __call__(self, loop=None):
         """Watch assets for changes.
 
@@ -212,7 +215,8 @@ class WatchCommand(Command):
                 print('Bringing up to date: %s' % bundle.output)
                 bundle.build(force=False)
 
-            self.log.info("Watching %d bundles for changes..." % len(self.environment))
+            self.log.info("Watching %d bundles for changes..." %
+                          len(self.environment))
 
             while True:
                 changed_bundles = self.check_for_changes(mtimes)
@@ -262,7 +266,6 @@ class WatchCommand(Command):
                         # EnvironmentError is what the hooks is allowed to
                         # raise for a temporary problem, like an invalid config
                         import traceback
-
                         traceback.print_exc()
                         # Don't update anything, wait for another change
                         bundles_to_update = set()
@@ -284,21 +287,29 @@ class WatchCommand(Command):
 
 
 class CleanCommand(Command):
-    def __call__(self):
-        """Delete generated assets."""
-        self.log.info('Cleaning generated assets...')
-        for bundle in self.environment:
+
+    def clean(self, bundles):
+        for bundle in bundles:
+            self.clean(b for b in bundle.contents if isinstance(b, Bundle))
             if not bundle.output:
                 continue
+
             file_path = bundle.resolve_output(self.environment)
             if os.path.exists(file_path):
                 os.unlink(file_path)
                 self.log.info("Deleted asset: %s" % bundle.output)
+
+    def __call__(self):
+        """Delete generated assets.
+        """
+        self.log.info('Cleaning generated assets...')
+        self.clean(self.environment)
         if isinstance(self.environment.cache, FilesystemCache):
             shutil.rmtree(self.environment.cache.directory)
 
 
 class CheckCommand(Command):
+
     def __call__(self):
         """Check to see if assets need to be rebuilt.
 
@@ -316,9 +327,7 @@ class CheckCommand(Command):
             if updater.needs_rebuild(bundle, self.environment):
                 needsupdate = True
                 msg = ' *** needs update ***'
-
-            self.log.info(
-                'Checking asset: %s%s%s', name, (' (%s)' % bundle.output) if bundle.output else '', msg)
+            self.log.info('Checking asset: %s%s%s', name, (' (%s)' % bundle.output) if bundle.output else '', msg)
         if needsupdate:
             sys.exit(-1)
 
@@ -346,7 +355,8 @@ class CommandLineEnvironment(object):
                 continue
             if not isinstance(construct, (list, tuple)):
                 construct = [construct, (), {}]
-            self.commands[name] = construct[0](self, *construct[1], **construct[2])
+            self.commands[name] = construct[0](
+                self, *construct[1], **construct[2])
 
     def __getattr__(self, item):
         # Allow method-like access to commands.
@@ -368,7 +378,12 @@ class CommandLineEnvironment(object):
             return function(**args)
 
     # List of commands installed
-    DefaultCommands = {'build': BuildCommand, 'watch': WatchCommand, 'clean': CleanCommand, 'check': CheckCommand}
+    DefaultCommands = {
+        'build': BuildCommand,
+        'watch': WatchCommand,
+        'clean': CleanCommand,
+        'check': CheckCommand
+    }
 
 
 class GenericArgparseImplementation(object):
@@ -403,13 +418,14 @@ class GenericArgparseImplementation(object):
                 raise EnvironmentError(e)
             return True
 
+
     def __init__(self, env=None, log=None, prog=None, no_global_options=False):
         try:
             import argparse
         except ImportError:
             raise RuntimeError(
-                'The webassets command line now requires the ' '"argparse" library on Python versions <= 2.6.'
-            )
+                'The webassets command line now requires the '
+                '"argparse" library on Python versions <= 2.6.')
         else:
             self.argparse = argparse
         self.env = env
@@ -417,17 +433,23 @@ class GenericArgparseImplementation(object):
         self._construct_parser(prog, no_global_options)
 
     def _construct_parser(self, prog=None, no_global_options=False):
-        self.parser = parser = self.argparse.ArgumentParser(description="Manage assets.", prog=prog)
+        self.parser = parser = self.argparse.ArgumentParser(
+            description="Manage assets.",
+            prog=prog)
 
         if not no_global_options:
             # Start with the base arguments that are valid for any command.
             # XXX: Add those to the subparser?
-            parser.add_argument("-v", dest="verbose", action="store_true", help="be verbose")
-            parser.add_argument("-q", action="store_true", dest="quiet", help="be quiet")
+            parser.add_argument("-v", dest="verbose", action="store_true",
+                help="be verbose")
+            parser.add_argument("-q", action="store_true", dest="quiet",
+                help="be quiet")
             if self.env is None:
                 loadenv = parser.add_mutually_exclusive_group()
-                loadenv.add_argument("-c", "--config", dest="config", help="read environment from a YAML file")
-                loadenv.add_argument("-m", "--module", dest="module", help="read environment from a Python module")
+                loadenv.add_argument("-c", "--config", dest="config",
+                    help="read environment from a YAML file")
+                loadenv.add_argument("-m", "--module", dest="module",
+                    help="read environment from a Python module")
 
         # Add subparsers.
         subparsers = parser.add_subparsers(dest='command')
@@ -440,39 +462,32 @@ class GenericArgparseImplementation(object):
     @staticmethod
     def make_build_parser(parser):
         parser.add_argument(
-            'bundles',
-            nargs='*',
-            metavar='BUNDLE',
-            help='Optional bundle names to process. If none are ' 'specified, then all known bundles will be built.',
-        )
+            'bundles', nargs='*', metavar='BUNDLE',
+            help='Optional bundle names to process. If none are '
+                 'specified, then all known bundles will be built.')
         parser.add_argument(
-            '--output',
-            '-o',
-            nargs=2,
-            action='append',
+            '--output', '-o', nargs=2, action='append',
             metavar=('BUNDLE', 'FILE'),
-            help='Build the given bundle, and use a custom output ' 'file. Can be given multiple times.',
-        )
+            help='Build the given bundle, and use a custom output '
+                 'file. Can be given multiple times.')
         parser.add_argument(
-            '--directory',
-            '-d',
+            '--directory', '-d',
             help='Write built files to this directory, using the '
-            'basename defined by the bundle. Will offset '
-            'the original bundle output paths on their common '
-            'prefix. Cannot be used with --output.',
-        )
-        parser.add_argument('--no-cache', action='store_true', help='Do not use a cache that might be configured.')
+                 'basename defined by the bundle. Will offset '
+                 'the original bundle output paths on their common '
+                 'prefix. Cannot be used with --output.')
+        parser.add_argument(
+            '--no-cache', action='store_true',
+            help='Do not use a cache that might be configured.')
         parser.add_argument(
             '--manifest',
             help='Write a manifest to the given file. Also supports '
-            'the id:arg format, if you want to use a different '
-            'manifest implementation.',
-        )
+                 'the id:arg format, if you want to use a different '
+                 'manifest implementation.')
         parser.add_argument(
-            '--production',
-            action='store_true',
-            help='Forcably turn off debug mode for the build. This ' 'only has an effect if debug is set to "merge".',
-        )
+            '--production', action='store_true',
+            help='Forcably turn off debug mode for the build. This '
+                 'only has an effect if debug is set to "merge".')
 
     def _setup_logging(self, ns):
         if self.log:
@@ -487,7 +502,8 @@ class GenericArgparseImplementation(object):
                 # better than the logger level, since this is "our" handler,
                 # we create it, for the purposes of having a default output.
                 # The logger itself the user may be modifying.
-                handler.setLevel(logging.DEBUG if ns.verbose else (logging.WARNING if ns.quiet else logging.INFO))
+                handler.setLevel(logging.DEBUG if ns.verbose else (
+                    logging.WARNING if ns.quiet else logging.INFO))
         return log
 
     def _setup_assets_env(self, ns, log):
@@ -501,9 +517,9 @@ class GenericArgparseImplementation(object):
         return env
 
     def _setup_cmd_env(self, assets_env, log, ns):
-        return CommandLineEnvironment(
-            assets_env, log, commands={'watch': (GenericArgparseImplementation.WatchCommand, (ns,), {})}
-        )
+        return CommandLineEnvironment(assets_env, log, commands={
+            'watch': (GenericArgparseImplementation.WatchCommand, (ns,), {})
+        })
 
     def _prepare_command_args(self, ns):
         # Prepare a dict of arguments cleaned of values that are not
@@ -519,7 +535,8 @@ class GenericArgparseImplementation(object):
         log = self._setup_logging(ns)
         env = self._setup_assets_env(ns, log)
         if env is None:
-            raise CommandError("Error: No environment given or found. Maybe use -m?")
+            raise CommandError(
+                "Error: No environment given or found. Maybe use -m?")
         cmd = self._setup_cmd_env(env, log, ns)
 
         # Run the selected command

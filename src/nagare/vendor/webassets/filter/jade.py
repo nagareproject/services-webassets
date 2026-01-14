@@ -1,6 +1,5 @@
 # coding=utf-8
 
-from __future__ import print_function
 import os, subprocess
 from webassets.filter import Filter, register_filter
 from webassets.exceptions import FilterError
@@ -62,9 +61,10 @@ class Jade(Filter):
         'jade': 'JADE_BIN',
         'jade_runtime': 'JADE_RUNTIME',
         'jade_no_debug': 'JADE_NO_DEBUG',
-        'js_var': 'JADE_TEMPLATE_VAR',
+        'js_var': 'JADE_TEMPLATE_VAR'
     }
     argv = []
+
 
     def setup(self):
         """
@@ -81,20 +81,22 @@ class Jade(Filter):
         if not self.js_var:
             self.js_var = 'templates'
 
+
     def input(self, _in, out, **kwargs):
         """
         Compile individual Jade templates
         """
-        proc = subprocess.Popen(
-            self.argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=(os.name == 'nt')
-        )
+        proc = subprocess.Popen(self.argv,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=(os.name == 'nt'))
         stdout, stderr = proc.communicate(_in.read())
 
         if proc.returncode != 0:
-            raise FilterError(
-                ('jade: subprocess returned a non-success ' + 'result code: %s, stdout=%s, stderr=%s')
-                % (proc.returncode, stdout, stderr)
-            )
+            raise FilterError(('jade: subprocess returned a non-success ' +
+                'result code: %s, stdout=%s, stderr=%s')
+                 % (proc.returncode, stdout, stderr))
         elif stderr:
             print('jade filter has warnings:', stderr)
 
@@ -105,6 +107,7 @@ class Jade(Filter):
         preamble = "window['%s']['%s'] = " % (self.js_var, key)
 
         out.write('%s%s' % (preamble, stdout.strip()))
+
 
     def output(self, _in, out, **kwargs):
         """

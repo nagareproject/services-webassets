@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 
 from webassets.filter import ExternalTool
@@ -98,7 +96,6 @@ class Sass(ExternalTool):
         These are fed into the -I flag of the sass command and
         is used to control where sass imports code from.
     """
-
     # TODO: If an output filter could be passed the list of all input
     # files, the filter might be able to do something interesting with
     # it (for example, determine that all source files are in the same
@@ -126,7 +123,9 @@ class Sass(ExternalTool):
         if cd:
             child_cwd = cd
 
-        args = [self.binary or 'sass', '--stdin', '--style', self.style or 'expanded']
+        args = [self.binary or 'sass',
+                '--stdin',
+                '--style', self.style or 'expanded']
 
         if not self.use_scss:
             args.append("--indented")
@@ -154,7 +153,8 @@ class Sass(ExternalTool):
 
 
 class SCSS(Sass):
-    """Version of the ``sass`` filter that uses the SCSS syntax."""
+    """Version of the ``sass`` filter that uses the SCSS syntax.
+    """
 
     name = 'scss'
 

@@ -23,7 +23,8 @@ def path2url(path):
 
 
 class PatternRewriter(Filter):
-    """Base class for input filters which want to replace certain patterns."""
+    """Base class for input filters which want to replace certain patterns.
+    """
 
     # Define the patterns in the form of:
     #   method to call -> pattern to call it for (as a compiled regex)
@@ -41,8 +42,7 @@ class PatternRewriter(Filter):
         out.write(content)
 
 
-urltag_re = re.compile(
-    r"""
+urltag_re = re.compile(r"""
 url\(
   (\s*)                 # allow whitespace wrapping (and capture)
   (                     # capture actual url
@@ -56,9 +56,7 @@ url\(
 
 # (1) non-greedy to let the last whitespace group capture something
 # TODO: would it be faster to handle whitespace within _rewrite()?
-""",
-    re.VERBOSE,
-)
+""", re.VERBOSE)
 
 
 class CSSUrlRewriter(PatternRewriter):
@@ -66,15 +64,20 @@ class CSSUrlRewriter(PatternRewriter):
     in CSS stylesheets.
     """
 
-    patterns = {'rewrite_url': urltag_re}
+    patterns = {
+        'rewrite_url': urltag_re
+    }
 
     def input(self, _in, out, **kw):
-        source, source_path, output, output_path = kw['source'], kw['source_path'], kw['output'], kw['output_path']
+        source, source_path, output, output_path = \
+            kw['source'], kw['source_path'], kw['output'], kw['output_path']
 
         self.source_path = source_path
         self.output_path = output_path
-        self.source_url = self.ctx.resolver.resolve_source_to_url(self.ctx, source_path, source)
-        self.output_url = self.ctx.resolver.resolve_output_to_url(self.ctx, output)
+        self.source_url = self.ctx.resolver.resolve_source_to_url(
+            self.ctx, source_path, source)
+        self.output_url = self.ctx.resolver.resolve_output_to_url(
+            self.ctx, output)
 
         return super(CSSUrlRewriter, self).input(_in, out, **kw)
 
@@ -96,7 +99,8 @@ class CSSUrlRewriter(PatternRewriter):
 
         url = self.replace_url(url) or url
 
-        result = 'url(%s%s%s%s%s)' % (text_before, quotes_used, url, quotes_used, text_after)
+        result = 'url(%s%s%s%s%s)' % (
+            text_before, quotes_used, url, quotes_used, text_after)
         return result
 
     def replace_url(self, url):

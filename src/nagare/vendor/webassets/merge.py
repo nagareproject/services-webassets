@@ -1,23 +1,17 @@
 """Contains the core functionality that manages merging of assets.
 """
-from __future__ import with_statement
 import contextlib
 
-try:
-    from urllib.request import Request as URLRequest, urlopen
-    from urllib.error import HTTPError
-except ImportError:
-    from urllib2 import Request as URLRequest, urlopen
-    from urllib2 import HTTPError
 import logging
 from io import open, BytesIO
-from webassets import six
-from webassets.six.moves import filter
+from urllib.request import Request as URLRequest, urlopen
+from urllib.error import HTTPError
 
 from .utils import cmp_debug_levels, StringIO, hash_func
 
 
-__all__ = ('FileHunk', 'MemoryHunk', 'merge', 'FilterTool', 'MoreThanOneFilterError', 'NoFilters')
+__all__ = ('FileHunk', 'MemoryHunk', 'merge', 'FilterTool',
+           'MoreThanOneFilterError', 'NoFilters')
 
 
 # Log which is used to output low-level information about what the build does.
@@ -30,7 +24,6 @@ __all__ = ('FileHunk', 'MemoryHunk', 'merge', 'FilterTool', 'MoreThanOneFilterEr
 log = logging.getLogger('webassets.debug')
 log.addHandler(logging.StreamHandler())
 import os
-
 if os.environ.get('WEBASSETS_DEBUG'):
     log.setLevel(logging.DEBUG)
 else:
@@ -38,7 +31,8 @@ else:
 
 
 class BaseHunk(object):
-    """Abstract base class."""
+    """Abstract base class.
+    """
 
     def mtime(self):
         raise NotImplementedError()
@@ -57,7 +51,7 @@ class BaseHunk(object):
 
     def save(self, filename):
         data = self.data()
-        if isinstance(data, type(u'')):
+        if isinstance(data, str):
             data = data.encode('utf-8')
 
         with open(filename, 'wb') as f:
@@ -65,7 +59,8 @@ class BaseHunk(object):
 
 
 class FileHunk(BaseHunk):
-    """Exposes a single file through as a hunk."""
+    """Exposes a single file through as a hunk.
+    """
 
     def __init__(self, filename):
         self.filename = filename
@@ -105,13 +100,12 @@ class UrlHunk(BaseHunk):
             # Look in the cache for etag / last modified headers to use
             # TODO: "expires" header could be supported
             if self.env and self.env.cache:
-                headers = self.env.cache.get(('url', 'headers', self.url))
+                headers = self.env.cache.get(
+                    ('url', 'headers', self.url))
                 if headers:
                     etag, lmod = headers
-                    if etag:
-                        request.add_header('If-None-Match', etag)
-                    if lmod:
-                        request.add_header('If-Modified-Since', lmod)
+                    if etag: request.add_header('If-None-Match', etag)
+                    if lmod: request.add_header('If-Modified-Since', lmod)
 
             # Make a request
             try:
@@ -124,7 +118,7 @@ class UrlHunk(BaseHunk):
             else:
                 with contextlib.closing(response):
                     data = response.read()
-                # if isinstance(data, six.binary_type):
+                #if isinstance(data, bytes):
                 #    data = data.decode('utf-8')
                 self._data = data
 
@@ -132,8 +126,8 @@ class UrlHunk(BaseHunk):
                 if self.env and self.env.cache:
                     self.env.cache.set(
                         ('url', 'headers', self.url),
-                        (response.headers.get("ETag"), response.headers.get("Last-Modified")),
-                    )
+                        (response.headers.get("ETag"),
+                         response.headers.get("Last-Modified")))
                     self.env.cache.set(('url', 'contents', self.url), self._data)
         return self._data
 
@@ -166,38 +160,58 @@ class MemoryHunk(BaseHunk):
 
     def save(self, filename):
         data = self.data()
-        if isinstance(data, type(u'')):
+        if isinstance(data, str):
             data = data.encode('utf-8')
-        f = open(filename, 'wb')
-        try:
+        with open(filename, 'wb') as f:
             f.write(data)
-        finally:
-            f.close()
 
 
 def merge(hunks, separator=None):
-    """Merge the given list of hunks, returning a new ``MemoryHunk`` object."""
+    """Merge the given list of hunks, returning a new ``MemoryHunk`` object.
+    """
     # TODO: combine the list of source files, we'd like to collect them
     # The linebreak is important in certain cases for Javascript
     # files, like when a last line is a //-comment.
     datas = [h.data() for h in hunks]
+    is_str = [isinstance(data, str) for data in datas]
 
-    is_unicodes = [isinstance(d, type(u'')) for d in datas]
-    if all(is_unicodes):
+    if all(is_str):
         separator = '\n'
-    elif not any(is_unicodes):
+    elif not any(is_str):
         separator = b''
     else:
-        datas = [d.decode('utf-8') if isinstance(d, type(b'')) else d for d in datas]
+        datas = [data if isinstance(data, str) else data.decode('utf-8') for data in datas]
         separator = '\n'
 
     return MemoryHunk(separator.join(datas))
 
 
 class MoreThanOneFilterError(Exception):
+
     def __init__(self, message, filters):
         Exception.__init__(self, message)
         self.filters = filters
+
+
+def create_input_buffer_for(data):
+    return (StringIO if isinstance(data, str) else BytesIO)(data)
+
+
+def convert_input_buffer_for(filter, data):
+    accepts_binary = getattr(filter, 'binary_input', False)
+    is_binary = not isinstance(data, str)
+
+    if accepts_binary and not is_binary:
+        data = data.getvalue().encode('utf-8')
+
+    if not accepts_binary and is_binary:
+        data = data.decode('utf-8')
+
+    return create_input_buffer_for(data)
+
+
+def create_output_buffer_for(filter):
+    return BytesIO() if getattr(filter, 'binary_output', False) else StringIO()
 
 
 class NoFilters(Exception):
@@ -213,14 +227,8 @@ class FilterTool(object):
     ``kwargs`` are options that should be passed along to the filters.
     """
 
-    VALID_TRANSFORMS = (
-        'input',
-        'output',
-    )
-    VALID_FUNCS = (
-        'open',
-        'concat',
-    )
+    VALID_TRANSFORMS = ('input', 'output',)
+    VALID_FUNCS =  ('open', 'concat',)
 
     def __init__(self, cache=None, no_cache_read=False, kwargs=None):
         self.cache = cache
@@ -228,7 +236,8 @@ class FilterTool(object):
         self.kwargs = kwargs or {}
 
     def _wrap_cache(self, key, func):
-        """Return cache value ``key``, or run ``func``."""
+        """Return cache value ``key``, or run ``func``.
+        """
         if self.cache:
             if not self.no_cache_read:
                 log.debug('Checking cache for key %s', key)
@@ -239,32 +248,11 @@ class FilterTool(object):
 
         content = func().getvalue()
         if self.cache:
-            log.debug(
-                'Storing result in cache with key %s',
-                key,
-            )
+            log.debug('Storing result in cache with key %s', key,)
             self.cache.set(key, content)
         return MemoryHunk(content)
 
-    def create_input_buffer_for(self, data):
-        return (StringIO if isinstance(data, type(u'')) else BytesIO)(data)
-
-    def convert_input_buffer_for(self, filter, data):
-        accepts_binary = getattr(filter, 'binary_input', False)
-        is_binary = not isinstance(data, type(u''))
-
-        if accepts_binary and not is_binary:
-            data = data.getvalue().encode('utf-8')
-
-        if not accepts_binary and is_binary:
-            data = data.decode('utf-8')
-
-        return (StringIO if isinstance(data, type(u'')) else BytesIO)(data)
-
-    def create_output_buffer_for(self, filter):
-        return BytesIO(b'') if getattr(filter, 'binary_output', False) else StringIO(u'')
-
-    def apply(self, hunk, filters, type_, kwargs=None):
+    def apply(self, hunk, filters, type, kwargs=None):
         """Apply the given list of filters to the hunk, returning a new
         ``MemoryHunk`` object.
 
@@ -272,24 +260,27 @@ class FilterTool(object):
         If ``hunk`` is a file hunk, a ``source_path`` key will automatically
         be added to ``kwargs``.
         """
-        assert type_ in self.VALID_TRANSFORMS
-        log.debug('Need to run method "%s" of filters (%s) on hunk %s with ' 'kwargs=%s', type_, filters, hunk, kwargs)
+        assert type in self.VALID_TRANSFORMS
+        log.debug('Need to run method "%s" of filters (%s) on hunk %s with '
+                  'kwargs=%s', type, filters, hunk, kwargs)
 
-        filters = [f for f in filters if getattr(f, type_, None)]
+        filters = [f for f in filters if getattr(f, type, None)]
         if not filters:  # Short-circuit
-            log.debug('No filters have "%s" methods, returning hunk ' 'unchanged' % (type_,))
+            log.debug('No filters have "%s" methods, returning hunk '
+                      'unchanged' % (type,))
             return hunk
 
         kwargs_final = self.kwargs.copy()
         kwargs_final.update(kwargs or {})
 
         def func():
-            data = self.create_input_buffer_for(hunk.data())
+            data = create_input_buffer_for(hunk.data())
             for filter in filters:
-                data = self.convert_input_buffer_for(filter, data.read())
-                out = self.create_output_buffer_for(filter)
-                log.debug('Running method "%s" of  %s with kwargs=%s', type_, filter, kwargs_final)
-                getattr(filter, type_)(data, out, **kwargs_final)
+                data = convert_input_buffer_for(filter, data.read())
+                out = create_output_buffer_for(filter)
+                log.debug('Running method "%s" of  %s with kwargs=%s',
+                    type, filter, kwargs_final)
+                getattr(filter, type)(data, out, **kwargs_final)
                 data = out
                 data.seek(0)
 
@@ -313,7 +304,7 @@ class FilterTool(object):
         # key, such a change would invalidate the caches for all subsequent
         # operations on this hunk as well, even though it didn't actually
         # change after all.
-        key = ("hunk", hunk, tuple(filters), type_, additional_cache_keys)
+        key = ("hunk", hunk, tuple(filters), type, additional_cache_keys)
         return self._wrap_cache(key, func)
 
     def apply_func(self, filters, type, args, kwargs=None, cache_key=None):
@@ -329,9 +320,8 @@ class FilterTool(object):
         key, in addition to the default key (the filter and arguments).
         """
         assert type in self.VALID_FUNCS
-        log.debug(
-            'Need to run method "%s" of one of the filters (%s) ' 'with args=%s, kwargs=%s', type, filters, args, kwargs
-        )
+        log.debug('Need to run method "%s" of one of the filters (%s) '
+                  'with args=%s, kwargs=%s', type, filters, args, kwargs)
 
         filters = [f for f in filters if getattr(f, type, None)]
         if not filters:  # Short-circuit
@@ -340,16 +330,17 @@ class FilterTool(object):
 
         if len(filters) > 1:
             raise MoreThanOneFilterError(
-                'These filters cannot be combined: %s' % (', '.join([f.name for f in filters])), filters
-            )
+                'These filters cannot be combined: %s' % (
+                    ', '.join([f.name for f in filters])), filters)
 
         kwargs_final = self.kwargs.copy()
         kwargs_final.update(kwargs or {})
 
         def func():
             filter = filters[0]
-            out = StringIO(u'')  # For 2.x, StringIO().getvalue() returns str
-            log.debug('Running method "%s" of %s with args=%s, kwargs=%s', type, filter, args, kwargs)
+            out = create_output_buffer_for(filter)
+            log.debug('Running method "%s" of %s with args=%s, kwargs=%s',
+                type, filter, args, kwargs)
             getattr(filter, type)(out, *args, **kwargs_final)
             return out
 
@@ -388,4 +379,6 @@ def select_filters(filters, level):
     """Return from the list in ``filters`` those filters which indicate that
     they should run for the given debug level.
     """
-    return [f for f in filters if f.max_debug_level is None or cmp_debug_levels(level, f.max_debug_level) <= 0]
+    return [f for f in filters
+            if f.max_debug_level is None or
+               cmp_debug_levels(level, f.max_debug_level) <= 0]
