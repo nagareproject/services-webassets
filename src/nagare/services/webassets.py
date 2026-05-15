@@ -17,12 +17,18 @@ if vendor_path not in sys.path:
     sys.path.insert(0, vendor_path)
 
 from webassets import Bundle, Environment, filter  # noqa: F401
-from dukpy.webassets import BabelJS, BabelJSX, TypeScript, CompileLess
 from webassets.bundle import get_all_bundle_files
 
 from nagare.server import reference
 from nagare.services import plugin
 from nagare.admin.webassets import Command
+
+try:
+    from dukpy.webassets import BabelJS, BabelJSX, TypeScript, CompileLess
+
+    dukpy = True
+except ImportError:
+    dukpy = False
 
 
 class GZipFilter(filter.Filter):
@@ -111,10 +117,12 @@ class WebAssets(plugin.Plugin):
         self.reload = False if reload else None
         self.watch = watch
 
-        filter.register_filter(TypeScript)
-        filter.register_filter(BabelJSX)
-        filter.register_filter(BabelJS)
-        filter.register_filter(CompileLess)
+        if dukpy:
+            filter.register_filter(TypeScript)
+            filter.register_filter(BabelJSX)
+            filter.register_filter(BabelJS)
+            filter.register_filter(CompileLess)
+
         filter.register_filter(GZipFilter)
 
         if bundles:
